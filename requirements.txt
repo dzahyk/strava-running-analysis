@@ -1,0 +1,4 @@
+pandas==3.0.5
+duckdb==1.5.5
+streamlit==1.62.0
+plotly==7.0.0
