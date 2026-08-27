@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables / secrets
+.env
+.streamlit/secrets.toml
+
+# Private raw Strava export
+data/raw/
+
+# Local DuckDB database files
+*.duckdb
+*.duckdb.wal
+
+# Temporary files
+*.tmp
+*.log
+
+# Local document archive
+documents/archive/

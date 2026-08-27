@@ -1,0 +1,13 @@
+metric,value
+raw_export_start,2025-11-09
+raw_export_end,2026-07-22
+run_analysis_start,2025-11-12
+run_analysis_end,2026-07-22
+distance_source,Distance.1 / 1000
+total_runs,126
+total_distance_km,1065.9136
+total_running_hours,126.9242
+average_distance_km,8.4596
+median_distance_km,9.9464
+longest_run_km,23.5988
+overall_weighted_pace_min_km,7.144528

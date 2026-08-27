@@ -1,0 +1,9 @@
+check,value
+Raw activity rows,185
+Raw columns,103
+Run rows before cleaning,126
+Run rows after cleaning,126
+Duplicate Activity ID before cleaning,0
+Missing Activity Date before cleaning,0
+Missing Moving Time before cleaning,0
+Missing Distance.1 before cleaning,0
