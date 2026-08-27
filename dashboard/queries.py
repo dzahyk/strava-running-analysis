@@ -2,12 +2,19 @@
 Query layer for the Strava Running Analysis V2 dashboard.
 
 This module initializes DuckDB from the project's SQL scripts and
-provides small reusable functions that return Pandas DataFrames.
+provides reusable functions for dashboard data access.
 
 V2 source of truth:
     data/processed/activities_run_clean.csv
 
 The raw Strava export is never read by this module.
+
+Interactive filtering:
+    year_month=None
+        -> use the full analytical dataset
+
+    year_month="YYYY-MM"
+        -> calculate filtered metrics from v_run_details
 """
 
 from pathlib import Path
@@ -16,7 +23,10 @@ import duckdb
 import pandas as pd
 
 
+# ------------------------------------------------------------
 # Project paths
+# ------------------------------------------------------------
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SQL_DIR = PROJECT_ROOT / "sql"
 
@@ -27,22 +37,18 @@ SQL_FILES = [
 ]
 
 
-def initialize_database(database: str = ":memory:") -> duckdb.DuckDBPyConnection:
+# ------------------------------------------------------------
+# Database initialization
+# ------------------------------------------------------------
+
+def initialize_database(
+    database: str = ":memory:",
+) -> duckdb.DuckDBPyConnection:
     """
-    Initialize a DuckDB database and execute all V2 SQL scripts.
+    Initialize DuckDB and execute all V2 SQL scripts.
 
-    By default, an in-memory database is used. This means the dashboard
+    By default, an in-memory database is used so the dashboard
     does not depend on the local strava_running.duckdb file.
-
-    Parameters
-    ----------
-    database:
-        DuckDB database path. Defaults to ":memory:".
-
-    Returns
-    -------
-    duckdb.DuckDBPyConnection
-        Ready-to-query DuckDB connection.
     """
     connection = duckdb.connect(database)
 
@@ -53,22 +59,105 @@ def initialize_database(database: str = ":memory:") -> duckdb.DuckDBPyConnection
     return connection
 
 
-def get_kpi_summary(
+# ------------------------------------------------------------
+# Filter options
+# ------------------------------------------------------------
+
+def get_available_months(
     connection: duckdb.DuckDBPyConnection,
-) -> pd.DataFrame:
-    """Return the overall KPI summary."""
-    return connection.execute(
+) -> list[str]:
+    """Return available analysis months in chronological order."""
+    result = connection.execute(
         """
-        SELECT *
-        FROM v_kpi_summary
+        SELECT DISTINCT
+            year_month
+        FROM v_run_details
+        ORDER BY
+            year_month
         """
     ).df()
 
+    return result["year_month"].tolist()
+
+
+# ------------------------------------------------------------
+# KPI summary
+# ------------------------------------------------------------
+
+def get_kpi_summary(
+    connection: duckdb.DuckDBPyConnection,
+    year_month: str | None = None,
+) -> pd.DataFrame:
+    """
+    Return overall or month-filtered KPI metrics.
+
+    If year_month is None, the existing overall KPI view is used.
+    Otherwise, metrics are recalculated from v_run_details.
+    """
+    if year_month is None:
+        return connection.execute(
+            """
+            SELECT *
+            FROM v_kpi_summary
+            """
+        ).df()
+
+    return connection.execute(
+        """
+        SELECT
+            COUNT(*) AS total_runs,
+
+            ROUND(
+                SUM(distance_km),
+                2
+            ) AS total_distance_km,
+
+            ROUND(
+                AVG(distance_km),
+                2
+            ) AS average_distance_km,
+
+            ROUND(
+                MAX(distance_km),
+                2
+            ) AS longest_run_km,
+
+            ROUND(
+                SUM(moving_time_sec) / 3600.0,
+                2
+            ) AS total_moving_hours,
+
+            ROUND(
+                (SUM(moving_time_sec) / 60.0)
+                / NULLIF(SUM(distance_km), 0),
+                4
+            ) AS weighted_pace_min_km,
+
+            MIN(activity_date) AS start_date,
+
+            MAX(activity_date) AS end_date
+
+        FROM v_run_details
+
+        WHERE year_month = ?
+        """,
+        [year_month],
+    ).df()
+
+
+# ------------------------------------------------------------
+# Monthly trend
+# ------------------------------------------------------------
 
 def get_monthly_summary(
     connection: duckdb.DuckDBPyConnection,
 ) -> pd.DataFrame:
-    """Return monthly running metrics in chronological order."""
+    """
+    Return the full monthly running trend.
+
+    This remains unfiltered so the dashboard preserves temporal
+    context even when a single month is selected.
+    """
     return connection.execute(
         """
         SELECT *
@@ -78,55 +167,183 @@ def get_monthly_summary(
     ).df()
 
 
+# ------------------------------------------------------------
+# Weekday summary
+# ------------------------------------------------------------
+
 def get_weekday_summary(
     connection: duckdb.DuckDBPyConnection,
+    year_month: str | None = None,
 ) -> pd.DataFrame:
-    """Return running metrics ordered Monday through Sunday."""
+    """Return overall or month-filtered weekday metrics."""
+    if year_month is None:
+        return connection.execute(
+            """
+            SELECT *
+            FROM v_weekday_summary
+            ORDER BY weekday_number
+            """
+        ).df()
+
     return connection.execute(
         """
-        SELECT *
-        FROM v_weekday_summary
-        ORDER BY weekday_number
-        """
+        SELECT
+            weekday_number,
+            day_name,
+
+            COUNT(*) AS total_runs,
+
+            ROUND(
+                SUM(distance_km),
+                2
+            ) AS total_distance_km,
+
+            ROUND(
+                (SUM(moving_time_sec) / 60.0)
+                / NULLIF(SUM(distance_km), 0),
+                4
+            ) AS weighted_pace_min_km
+
+        FROM v_run_details
+
+        WHERE year_month = ?
+
+        GROUP BY
+            weekday_number,
+            day_name
+
+        ORDER BY
+            weekday_number
+        """,
+        [year_month],
     ).df()
 
+
+# ------------------------------------------------------------
+# Distance category summary
+# ------------------------------------------------------------
 
 def get_distance_categories(
     connection: duckdb.DuckDBPyConnection,
+    year_month: str | None = None,
 ) -> pd.DataFrame:
-    """Return running metrics grouped by distance category."""
+    """Return overall or month-filtered distance categories."""
+    if year_month is None:
+        return connection.execute(
+            """
+            SELECT *
+            FROM v_distance_category
+            ORDER BY category_order
+            """
+        ).df()
+
     return connection.execute(
         """
-        SELECT *
-        FROM v_distance_category
-        ORDER BY category_order
-        """
+        SELECT
+            category_order,
+            distance_category,
+
+            COUNT(*) AS total_runs,
+
+            ROUND(
+                SUM(distance_km),
+                2
+            ) AS total_distance_km,
+
+            ROUND(
+                AVG(distance_km),
+                2
+            ) AS average_distance_km,
+
+            ROUND(
+                (SUM(moving_time_sec) / 60.0)
+                / NULLIF(SUM(distance_km), 0),
+                4
+            ) AS weighted_pace_min_km
+
+        FROM v_run_details
+
+        WHERE year_month = ?
+
+        GROUP BY
+            category_order,
+            distance_category
+
+        ORDER BY
+            category_order
+        """,
+        [year_month],
     ).df()
 
+
+# ------------------------------------------------------------
+# Ranked longest runs
+# ------------------------------------------------------------
 
 def get_longest_runs(
     connection: duckdb.DuckDBPyConnection,
     limit: int = 10,
+    year_month: str | None = None,
 ) -> pd.DataFrame:
     """
-    Return the longest runs ordered by distance rank.
+    Return the longest runs.
 
-    Parameters
-    ----------
-    connection:
-        Active DuckDB connection.
-    limit:
-        Number of ranked runs to return. Defaults to 10.
+    For the full dataset, the existing SQL ranking view is used.
+
+    For a selected month, ROW_NUMBER() is recalculated after the
+    month filter so ranking restarts at 1 inside that month.
     """
     if limit < 1:
         raise ValueError("limit must be at least 1")
 
+    if year_month is None:
+        return connection.execute(
+            """
+            SELECT *
+            FROM v_longest_runs
+            WHERE distance_rank <= ?
+            ORDER BY distance_rank
+            """,
+            [limit],
+        ).df()
+
     return connection.execute(
         """
+        WITH filtered_runs AS (
+            SELECT *
+            FROM v_run_details
+            WHERE year_month = ?
+        ),
+
+        ranked_runs AS (
+            SELECT
+                ROW_NUMBER() OVER (
+                    ORDER BY
+                        distance_km DESC,
+                        activity_date ASC,
+                        activity_id ASC
+                ) AS distance_rank,
+
+                activity_id,
+                activity_date,
+                distance_km,
+                moving_time_min,
+                pace_min_km,
+                speed_kmh,
+                elevation_gain_m,
+                year_month,
+                day_name
+
+            FROM filtered_runs
+        )
+
         SELECT *
-        FROM v_longest_runs
+        FROM ranked_runs
         WHERE distance_rank <= ?
         ORDER BY distance_rank
         """,
-        [limit],
+        [
+            year_month,
+            limit,
+        ],
     ).df()

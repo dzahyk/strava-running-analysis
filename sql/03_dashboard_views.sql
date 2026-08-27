@@ -191,3 +191,45 @@ SELECT
     day_name
 
 FROM activities_run;
+
+
+-- ============================================================
+-- 5. Run-Level Analytical Details
+-- ============================================================
+
+CREATE OR REPLACE VIEW v_run_details AS
+
+SELECT
+    activity_id,
+    activity_date,
+    distance_km,
+    moving_time_sec,
+    moving_time_min,
+    pace_min_km,
+    speed_kmh,
+    elevation_gain_m,
+    year,
+    month,
+    year_month,
+    day_name,
+
+    CAST(
+        EXTRACT(ISODOW FROM activity_date)
+        AS INTEGER
+    ) AS weekday_number,
+
+    CASE
+        WHEN distance_km < 5 THEN 1
+        WHEN distance_km < 10 THEN 2
+        WHEN distance_km < 15 THEN 3
+        ELSE 4
+    END AS category_order,
+
+    CASE
+        WHEN distance_km < 5 THEN 'Short (<5 km)'
+        WHEN distance_km < 10 THEN 'Medium (5-<10 km)'
+        WHEN distance_km < 15 THEN 'Long (10-<15 km)'
+        ELSE 'Very Long (>=15 km)'
+    END AS distance_category
+
+FROM activities_run;

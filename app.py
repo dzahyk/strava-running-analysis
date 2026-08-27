@@ -14,6 +14,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboard.queries import (
+    get_available_months,
     get_distance_categories,
     get_kpi_summary,
     get_longest_runs,
@@ -56,23 +57,53 @@ def format_pace(pace_min_km: float) -> str:
 
 
 @st.cache_data
-def load_dashboard_data():
+def load_available_month_options() -> list[str]:
+    """Return available dashboard months."""
+    connection = initialize_database()
+
+    try:
+        return get_available_months(connection)
+    finally:
+        connection.close()
+
+
+@st.cache_data
+def load_dashboard_data(
+    year_month: str | None,
+):
     """
     Build the in-memory DuckDB database and return dashboard data.
 
-    Only Pandas DataFrames are cached. The DuckDB connection is
-    closed immediately after the required data is loaded.
+    The monthly trend remains unfiltered for temporal context.
+    KPI, weekday, category, and ranked-run data respect the
+    selected month.
     """
     connection = initialize_database()
 
     try:
-        kpi_df = get_kpi_summary(connection)
-        monthly_df = get_monthly_summary(connection)
-        weekday_df = get_weekday_summary(connection)
-        category_df = get_distance_categories(connection)
+        kpi_df = get_kpi_summary(
+            connection,
+            year_month=year_month,
+        )
+
+        monthly_df = get_monthly_summary(
+            connection,
+        )
+
+        weekday_df = get_weekday_summary(
+            connection,
+            year_month=year_month,
+        )
+
+        category_df = get_distance_categories(
+            connection,
+            year_month=year_month,
+        )
+
         longest_df = get_longest_runs(
             connection,
             limit=10,
+            year_month=year_month,
         )
 
         return (
@@ -88,7 +119,43 @@ def load_dashboard_data():
 
 
 # ------------------------------------------------------------
-# Load data
+# Dashboard header and month filter
+# ------------------------------------------------------------
+
+st.title("🏃 Strava Running Analysis")
+
+st.caption(
+    "V2 interactive dashboard powered by DuckDB SQL, "
+    "Streamlit, Plotly, and a sanitized running dataset."
+)
+
+available_months = load_available_month_options()
+
+month_options = [
+    "All Months",
+    *available_months,
+]
+
+filter_col, _ = st.columns(
+    [1, 3]
+)
+
+with filter_col:
+    selected_month = st.selectbox(
+        "Analysis Month",
+        options=month_options,
+        index=0,
+    )
+
+selected_year_month = (
+    None
+    if selected_month == "All Months"
+    else selected_month
+)
+
+
+# ------------------------------------------------------------
+# Load dashboard data
 # ------------------------------------------------------------
 
 (
@@ -97,7 +164,9 @@ def load_dashboard_data():
     weekday_df,
     category_df,
     longest_df,
-) = load_dashboard_data()
+) = load_dashboard_data(
+    selected_year_month
+)
 
 if kpi_df.empty:
     st.error("KPI data could not be loaded.")
@@ -123,20 +192,32 @@ kpi = kpi_df.iloc[0]
 
 
 # ------------------------------------------------------------
-# Dashboard header
+# Active analysis context
 # ------------------------------------------------------------
 
-st.title("🏃 Strava Running Analysis")
+start_date = pd.to_datetime(
+    kpi["start_date"]
+).strftime("%d %b %Y")
 
-st.caption(
-    "V2 interactive dashboard powered by DuckDB SQL, "
-    "Streamlit, Plotly, and a sanitized running dataset."
+end_date = pd.to_datetime(
+    kpi["end_date"]
+).strftime("%d %b %Y")
+
+st.write(
+    f"**Current view:** {selected_month}"
 )
 
-start_date = pd.to_datetime(kpi["start_date"]).strftime("%d %b %Y")
-end_date = pd.to_datetime(kpi["end_date"]).strftime("%d %b %Y")
+st.write(
+    f"**Analysis period:** "
+    f"{start_date} — {end_date}"
+)
 
-st.write(f"**Analysis period:** {start_date} — {end_date}")
+if selected_year_month is not None:
+    st.caption(
+        "The KPI cards, running patterns, and ranked runs "
+        "reflect the selected month. Monthly trend charts "
+        "remain on the full analysis period for context."
+    )
 
 
 # ------------------------------------------------------------
@@ -281,7 +362,15 @@ with pattern_col1:
         .apply(format_pace)
     )
 
-    weekday_order = weekday_chart_df["day_name"].tolist()
+    weekday_order = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
 
     weekday_fig = px.bar(
         weekday_chart_df,
@@ -328,10 +417,12 @@ with pattern_col2:
         .apply(format_pace)
     )
 
-    category_order = (
-        category_chart_df["distance_category"]
-        .tolist()
-    )
+    category_order = [
+        "Short (<5 km)",
+        "Medium (5-<10 km)",
+        "Long (10-<15 km)",
+        "Very Long (>=15 km)",
+    ]
 
     category_fig = px.bar(
         category_chart_df,
@@ -378,7 +469,9 @@ st.divider()
 # Top running performances
 # ------------------------------------------------------------
 
-st.subheader("Top 10 Longest Runs")
+st.subheader(
+    f"Top {len(longest_df)} Longest Runs"
+)
 
 longest_display_df = longest_df.copy()
 
