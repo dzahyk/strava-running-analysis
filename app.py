@@ -36,6 +36,15 @@ st.set_page_config(
     layout="wide",
 )
 
+# V2.2 monthly distance target state
+DEFAULT_MONTHLY_DISTANCE_TARGET_KM = 150.0
+
+st.session_state.setdefault(
+    "monthly_distance_target_km",
+    DEFAULT_MONTHLY_DISTANCE_TARGET_KM,
+)
+
+
 
 # ------------------------------------------------------------
 # Helper functions
@@ -461,6 +470,32 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.markdown(
+    """
+    <div class="chart-control-label">
+        MONTHLY DISTANCE TARGET
+    </div>
+    <div class="chart-control-help">
+        Personal goal · km/month
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+monthly_distance_target_km = st.number_input(
+    "Monthly distance target",
+    min_value=25.0,
+    max_value=500.0,
+    step=5.0,
+    format="%.0f",
+    key="monthly_distance_target_km",
+    help=(
+        "Sets the horizontal reference line on Monthly Running Distance. "
+        "This personal target does not change analytics or filters."
+    ),
+    label_visibility="collapsed",
+)
+
 monthly_chart_col1, monthly_chart_col2 = st.columns(
     2,
     gap="large",
@@ -523,6 +558,31 @@ with monthly_chart_col1:
         bargap=0.32,
         barcornerradius=6,
     )
+
+    # V2.2 dynamic monthly distance target line
+    monthly_distance_y_max = max(
+        float(max_monthly_distance),
+        float(monthly_distance_target_km),
+    ) * 1.12
+
+    monthly_distance_fig.add_hline(
+        y=monthly_distance_target_km,
+        line_width=1.7,
+        line_dash="dash",
+        line_color="#FC4C02",
+        opacity=0.92,
+        annotation_text=(
+            f"Target · {monthly_distance_target_km:,.0f} km"
+        ),
+        annotation_position="top right",
+        annotation_font_size=11,
+        annotation_font_color="#FDBA74",
+    )
+
+    monthly_distance_fig.update_yaxes(
+        range=[0, monthly_distance_y_max],
+    )
+
 
     apply_chart_theme(
         monthly_distance_fig,

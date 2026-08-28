@@ -602,3 +602,61 @@ div[data-baseweb="select"]:focus-within > div {
         transition: none;
     }
 }
+
+/* V2.2 monthly distance target control */
+
+.chart-control-label {
+    margin-top: 0.25rem;
+    margin-bottom: 0.18rem;
+
+    color: #FC4C02;
+
+    font-size: 0.70rem;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+}
+
+.chart-control-help {
+    margin-bottom: 0.45rem;
+
+    color: #94A3B8;
+
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+/*
+   Keep the target input compact.
+   Scope this only to number inputs so other Streamlit widgets
+   remain unaffected.
+*/
+div[data-testid="stNumberInput"] {
+    max-width: 11rem;
+
+    margin-bottom: 1.15rem;
+}
+
+div[data-testid="stNumberInput"] input {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+div[data-testid="stNumberInput"] > div {
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease;
+}
+
+div[data-testid="stNumberInput"]:focus-within > div {
+    border-color: #FC4C02 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(252, 76, 2, 0.10) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    div[data-testid="stNumberInput"] > div {
+        transition: none;
+    }
+}
