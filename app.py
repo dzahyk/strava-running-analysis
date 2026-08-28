@@ -62,6 +62,98 @@ def format_month_option(value: str) -> str:
     ).strftime("%B %Y")
 
 
+# ------------------------------------------------------------
+# V2.1 Plotly visual system
+# ------------------------------------------------------------
+
+CHART_TEXT_PRIMARY = "#F8FAFC"
+CHART_TEXT_SECONDARY = "#CBD5E1"
+CHART_TEXT_MUTED = "#94A3B8"
+
+CHART_GRID = "rgba(148, 163, 184, 0.10)"
+CHART_AXIS = "rgba(148, 163, 184, 0.18)"
+
+CHART_ORANGE = "#FC4C02"
+CHART_INDIGO = "#6366F1"
+CHART_PURPLE = "#A78BFA"
+CHART_TEAL = "#14B8A6"
+CHART_CYAN = "#22D3EE"
+
+CHART_TRANSPARENT = "rgba(0, 0, 0, 0)"
+
+
+def apply_chart_theme(
+    fig,
+    *,
+    show_y_grid: bool = True,
+) -> None:
+    """Apply the shared Midnight Athletic Plotly styling."""
+    fig.update_layout(
+        paper_bgcolor=CHART_TRANSPARENT,
+        plot_bgcolor=CHART_TRANSPARENT,
+        font=dict(
+            family="Inter, sans-serif",
+            color=CHART_TEXT_SECONDARY,
+            size=12,
+        ),
+        title=dict(
+            font=dict(
+                color=CHART_TEXT_PRIMARY,
+                size=18,
+            ),
+            x=0.02,
+            xanchor="left",
+        ),
+        margin=dict(
+            l=24,
+            r=20,
+            t=64,
+            b=24,
+        ),
+        hoverlabel=dict(
+            bgcolor="#1E293B",
+            bordercolor=CHART_ORANGE,
+            font=dict(
+                color=CHART_TEXT_PRIMARY,
+                size=13,
+            ),
+        ),
+        legend=dict(
+            bgcolor=CHART_TRANSPARENT,
+            font=dict(
+                color=CHART_TEXT_MUTED,
+            ),
+        ),
+    )
+
+    fig.update_xaxes(
+        showgrid=False,
+        zeroline=False,
+        showline=True,
+        linecolor=CHART_AXIS,
+        tickfont=dict(
+            color=CHART_TEXT_MUTED,
+        ),
+        title_font=dict(
+            color=CHART_TEXT_MUTED,
+        ),
+    )
+
+    fig.update_yaxes(
+        showgrid=show_y_grid,
+        gridcolor=CHART_GRID,
+        gridwidth=1,
+        zeroline=False,
+        showline=False,
+        tickfont=dict(
+            color=CHART_TEXT_MUTED,
+        ),
+        title_font=dict(
+            color=CHART_TEXT_MUTED,
+        ),
+    )
+
+
 def render_kpi_card(
     label: str,
     value: str,
@@ -345,16 +437,34 @@ with kpi_col4:
     )
 
 
-st.divider()
+st.markdown(
+    '<div class="section-divider"></div>',
+    unsafe_allow_html=True,
+)
 
 
 # ------------------------------------------------------------
 # Monthly running analysis
 # ------------------------------------------------------------
 
-st.subheader("Monthly Running Analysis")
+st.markdown(
+    (
+        '<div class="section-kicker">Performance Trends</div>'
+        '<h2 class="section-heading">'
+        'Monthly Running Analysis'
+        '</h2>'
+        '<p class="section-description">'
+        'Track monthly training volume and weighted pace '
+        'across the full analysis period.'
+        '</p>'
+    ),
+    unsafe_allow_html=True,
+)
 
-monthly_chart_col1, monthly_chart_col2 = st.columns(2)
+monthly_chart_col1, monthly_chart_col2 = st.columns(
+    2,
+    gap="large",
+)
 
 
 # Monthly distance chart
@@ -369,17 +479,53 @@ with monthly_chart_col1:
             "year_month": "Month",
             "total_distance_km": "Distance (km)",
         },
-        hover_data={
-            "year_month": False,
-            "total_distance_km": ":.2f",
-            "total_runs": True,
-        },
+        custom_data=[
+            "total_runs",
+        ],
+        color_discrete_sequence=[
+            CHART_INDIGO,
+        ],
+    )
+
+    max_monthly_distance = (
+        monthly_df["total_distance_km"].max()
+    )
+
+    monthly_distance_colors = [
+        (
+            CHART_ORANGE
+            if distance == max_monthly_distance
+            else "#475569"
+        )
+        for distance in monthly_df["total_distance_km"]
+    ]
+
+    monthly_distance_fig.update_traces(
+        marker=dict(
+            color=monthly_distance_colors,
+            line=dict(
+                width=0,
+            ),
+        ),
+        opacity=0.94,
+        hovertemplate=(
+            "<b>%{x}</b>"
+            "<br>Distance: %{y:.2f} km"
+            "<br>Runs: %{customdata[0]:.0f}"
+            "<extra></extra>"
+        ),
     )
 
     monthly_distance_fig.update_layout(
         xaxis_title="Month",
         yaxis_title="Distance (km)",
-        hovermode="x unified",
+        hovermode="closest",
+        bargap=0.32,
+        barcornerradius=6,
+    )
+
+    apply_chart_theme(
+        monthly_distance_fig,
     )
 
     st.plotly_chart(
@@ -408,19 +554,101 @@ with monthly_chart_col2:
             "year_month": "Month",
             "weighted_pace_min_km": "Pace (min/km)",
         },
-        hover_data={
-            "year_month": False,
-            "weighted_pace_min_km": ":.4f",
-            "pace_display": True,
-            "total_runs": True,
-            "total_distance_km": ":.2f",
-        },
+        custom_data=[
+            "pace_display",
+            "total_runs",
+            "total_distance_km",
+        ],
+    )
+
+    monthly_pace_fig.update_traces(
+        mode="lines+markers",
+        line=dict(
+            color=CHART_PURPLE,
+            width=3,
+            shape="spline",
+            smoothing=1.2,
+        ),
+        marker=dict(
+            size=8,
+            color=CHART_PURPLE,
+            line=dict(
+                color="#E2E8F0",
+                width=1.4,
+            ),
+        ),
+        fill="tozeroy",
+        fillcolor="rgba(167, 139, 250, 0.08)",
+        hovertemplate=(
+            "<b>%{x}</b>"
+            "<br>Weighted Pace: %{customdata[0]}"
+            "<br>Runs: %{customdata[1]:.0f}"
+            "<br>Distance: %{customdata[2]:.2f} km"
+            "<extra></extra>"
+        ),
+    )
+
+    overall_weighted_pace = (
+        (
+            monthly_pace_df["weighted_pace_min_km"]
+            * monthly_pace_df["total_distance_km"]
+        ).sum()
+        / monthly_pace_df["total_distance_km"].sum()
+    )
+
+    pace_min = monthly_pace_df[
+        "weighted_pace_min_km"
+    ].min()
+
+    pace_max = monthly_pace_df[
+        "weighted_pace_min_km"
+    ].max()
+
+    pace_padding = max(
+        (pace_max - pace_min) * 0.18,
+        0.08,
     )
 
     monthly_pace_fig.update_layout(
         xaxis_title="Month",
         yaxis_title="Pace (min/km)",
         hovermode="x unified",
+    )
+
+    monthly_pace_fig.update_yaxes(
+        range=[
+            pace_min - pace_padding,
+            pace_max + pace_padding,
+        ],
+    )
+
+    monthly_pace_fig.update_xaxes(
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        spikecolor="rgba(148, 163, 184, 0.30)",
+        spikethickness=1,
+        spikedash="dot",
+    )
+
+    monthly_pace_fig.add_hline(
+        y=overall_weighted_pace,
+        line_width=1,
+        line_dash="dot",
+        line_color="rgba(252, 76, 2, 0.70)",
+        annotation_text=(
+            "Overall · "
+            f"{format_pace(overall_weighted_pace)}"
+        ),
+        annotation_position="top left",
+        annotation_font=dict(
+            color=CHART_TEXT_MUTED,
+            size=11,
+        ),
+    )
+
+    apply_chart_theme(
+        monthly_pace_fig,
     )
 
     st.plotly_chart(
@@ -434,16 +662,34 @@ with monthly_chart_col2:
     )
 
 
-st.divider()
+st.markdown(
+    '<div class="section-divider"></div>',
+    unsafe_allow_html=True,
+)
 
 
 # ------------------------------------------------------------
 # Running pattern analysis
 # ------------------------------------------------------------
 
-st.subheader("Running Patterns")
+st.markdown(
+    (
+        '<div class="section-kicker">Running Behavior</div>'
+        '<h2 class="section-heading">'
+        'Running Patterns'
+        '</h2>'
+        '<p class="section-description">'
+        'Understand when runs happen most often and how '
+        'activity distances are distributed.'
+        '</p>'
+    ),
+    unsafe_allow_html=True,
+)
 
-pattern_col1, pattern_col2 = st.columns(2)
+pattern_col1, pattern_col2 = st.columns(
+    2,
+    gap="large",
+)
 
 
 # Runs by day of week
@@ -477,22 +723,53 @@ with pattern_col1:
         labels={
             "day_name": "Day",
             "total_runs": "Runs",
-            "total_distance_km": "Distance (km)",
-            "pace_display": "Weighted Pace",
         },
-        hover_data={
-            "day_name": False,
-            "total_runs": True,
-            "total_distance_km": ":.2f",
-            "pace_display": True,
-            "weighted_pace_min_km": False,
-        },
+        custom_data=[
+            "total_distance_km",
+            "pace_display",
+        ],
+    )
+
+    max_weekday_runs = (
+        weekday_chart_df["total_runs"].max()
+    )
+
+    weekday_colors = [
+        (
+            CHART_ORANGE
+            if runs == max_weekday_runs
+            else "#475569"
+        )
+        for runs in weekday_chart_df["total_runs"]
+    ]
+
+    weekday_fig.update_traces(
+        marker=dict(
+            color=weekday_colors,
+            line=dict(
+                width=0,
+            ),
+        ),
+        opacity=0.94,
+        hovertemplate=(
+            "<b>%{x}</b>"
+            "<br>Runs: %{y:.0f}"
+            "<br>Distance: %{customdata[0]:.2f} km"
+            "<br>Weighted Pace: %{customdata[1]}"
+            "<extra></extra>"
+        ),
     )
 
     weekday_fig.update_layout(
         xaxis_title="Day",
         yaxis_title="Runs",
-        hovermode="x unified",
+        hovermode="closest",
+        bargap=0.30,
+        barcornerradius=6,
+    )
+
+    apply_chart_theme(
+        weekday_fig,
     )
 
     st.plotly_chart(
@@ -529,25 +806,55 @@ with pattern_col2:
         labels={
             "distance_category": "Distance Category",
             "total_runs": "Runs",
-            "total_distance_km": "Distance (km)",
-            "average_distance_km": "Average Distance (km)",
-            "pace_display": "Weighted Pace",
         },
-        hover_data={
-            "distance_category": False,
-            "total_runs": True,
-            "total_distance_km": ":.2f",
-            "average_distance_km": ":.2f",
-            "pace_display": True,
-            "weighted_pace_min_km": False,
-            "category_order": False,
-        },
+        custom_data=[
+            "total_distance_km",
+            "average_distance_km",
+            "pace_display",
+        ],
+    )
+
+    max_category_runs = (
+        category_chart_df["total_runs"].max()
+    )
+
+    category_colors = [
+        (
+            CHART_ORANGE
+            if runs == max_category_runs
+            else "#475569"
+        )
+        for runs in category_chart_df["total_runs"]
+    ]
+
+    category_fig.update_traces(
+        marker=dict(
+            color=category_colors,
+            line=dict(
+                width=0,
+            ),
+        ),
+        opacity=0.94,
+        hovertemplate=(
+            "<b>%{x}</b>"
+            "<br>Runs: %{y:.0f}"
+            "<br>Total Distance: %{customdata[0]:.2f} km"
+            "<br>Average Distance: %{customdata[1]:.2f} km"
+            "<br>Weighted Pace: %{customdata[2]}"
+            "<extra></extra>"
+        ),
     )
 
     category_fig.update_layout(
         xaxis_title="Distance Category",
         yaxis_title="Runs",
-        hovermode="x unified",
+        hovermode="closest",
+        bargap=0.32,
+        barcornerradius=6,
+    )
+
+    apply_chart_theme(
+        category_fig,
     )
 
     st.plotly_chart(
@@ -556,15 +863,28 @@ with pattern_col2:
     )
 
 
-st.divider()
+st.markdown(
+    '<div class="section-divider"></div>',
+    unsafe_allow_html=True,
+)
 
 
 # ------------------------------------------------------------
 # Top running performances
 # ------------------------------------------------------------
 
-st.subheader(
-    f"Top {len(longest_df)} Longest Runs"
+st.markdown(
+    (
+        '<div class="section-kicker">Performance Ranking</div>'
+        '<h2 class="section-heading">'
+        f'Top {len(longest_df)} Longest Runs'
+        '</h2>'
+        '<p class="section-description">'
+        'Review the longest running efforts in the active '
+        'analysis view, ranked from highest to lowest distance.'
+        '</p>'
+    ),
+    unsafe_allow_html=True,
 )
 
 longest_display_df = longest_df.copy()
@@ -609,35 +929,85 @@ longest_display_df = longest_display_df[
     ]
 ]
 
+st.markdown(
+    (
+        '<div class="table-context">'
+        '<span class="table-context-pill">'
+        f'{len(longest_display_df)} ranked activities'
+        '</span>'
+        '<span class="table-context-pill">'
+        'Primary metric · Distance'
+        '</span>'
+        '</div>'
+    ),
+    unsafe_allow_html=True,
+)
+
+table_row_height = 36
+
+table_height = (
+    42
+    + (len(longest_display_df) * table_row_height)
+    + 8
+)
+
 st.dataframe(
     longest_display_df,
     width="stretch",
+    height=table_height,
+    row_height=table_row_height,
     hide_index=True,
     column_config={
         "Rank": st.column_config.NumberColumn(
             "Rank",
             format="%d",
+            width="small",
+        ),
+        "Date": st.column_config.TextColumn(
+            "Date",
+            width="medium",
+        ),
+        "Day": st.column_config.TextColumn(
+            "Day",
+            width="medium",
         ),
         "Distance (km)": st.column_config.NumberColumn(
             "Distance (km)",
             format="%.2f",
+            width="medium",
+        ),
+        "Pace": st.column_config.TextColumn(
+            "Pace",
+            width="medium",
         ),
         "Elevation Gain (m)": st.column_config.NumberColumn(
             "Elevation Gain (m)",
             format="%.1f",
+            width="medium",
         ),
     },
 )
 
-st.caption(
-    "Runs are ranked by distance using the SQL "
-    "ROW_NUMBER() window function."
+st.markdown(
+    (
+        '<div class="table-note">'
+        'Ranking is generated in SQL with '
+        '<strong>ROW_NUMBER()</strong> ordered by distance. '
+        'The rank is recalculated after an active month filter '
+        'so the displayed ordering always reflects the current view.'
+        '</div>'
+    ),
+    unsafe_allow_html=True,
 )
 
 
-st.divider()
-
-st.caption(
-    "The dashboard uses the sanitized V1 analytical dataset. "
-    "Raw Strava export data is not used by the application."
+st.markdown(
+    (
+        '<div class="dashboard-footer">'
+        '🔒 <strong>Privacy by design.</strong> '
+        'This dashboard uses the sanitized V1 analytical dataset. '
+        'Raw Strava export data is not used by the application.'
+        '</div>'
+    ),
+    unsafe_allow_html=True,
 )

@@ -184,27 +184,53 @@ body,
    6. Section headers
    ------------------------------------------------------------ */
 
+.section-divider {
+    width: 100%;
+
+    margin-top: 2.75rem;
+    margin-bottom: 2.10rem;
+
+    border-top: 1px solid var(--border-subtle);
+}
+
+
+.section-kicker {
+    margin-bottom: 0.42rem;
+
+    color: var(--accent-strava);
+
+    font-size: 0.68rem;
+    font-weight: 700;
+
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+}
+
+
 .section-heading {
-    margin-top: var(--space-xl);
-    margin-bottom: var(--space-xs);
+    margin-top: 0;
+    margin-bottom: 0.48rem;
 
     color: var(--text-primary);
 
-    font-size: 1.28rem;
-    font-weight: 700;
+    font-size: 1.48rem;
+    font-weight: 720;
 
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
 }
 
 
 .section-description {
+    max-width: 760px;
+
     margin-top: 0;
-    margin-bottom: var(--space-lg);
+    margin-bottom: 1.65rem;
 
     color: var(--text-muted);
 
     font-size: 0.86rem;
-    line-height: 1.55;
+    line-height: 1.60;
 }
 
 
@@ -355,7 +381,63 @@ body,
 
 
 /* ------------------------------------------------------------
-   9. Footer
+   9. Ranking table
+   ------------------------------------------------------------ */
+
+.table-context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+
+    gap: 0.55rem;
+
+    margin-top: 0.20rem;
+    margin-bottom: 1.10rem;
+}
+
+
+.table-context-pill {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 0.38rem 0.68rem;
+
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+
+    background: rgba(30, 41, 59, 0.45);
+
+    color: var(--text-muted);
+
+    font-size: 0.72rem;
+    font-weight: 600;
+
+    letter-spacing: 0.02em;
+}
+
+
+.table-note {
+    margin-top: 0.85rem;
+    margin-bottom: 0;
+
+    padding: 0.68rem 0.85rem;
+
+    border-left: 2px solid var(--border-medium);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+
+    background: rgba(30, 41, 59, 0.28);
+
+    color: var(--text-muted);
+
+    font-size: 0.76rem;
+    font-weight: 400;
+
+    line-height: 1.55;
+}
+
+
+/* ------------------------------------------------------------
+   10. Footer
    ------------------------------------------------------------ */
 
 .dashboard-footer {
@@ -373,7 +455,7 @@ body,
 
 
 /* ------------------------------------------------------------
-   10. Responsive adjustments
+   11. Responsive adjustments
    ------------------------------------------------------------ */
 
 @media (max-width: 900px) {
