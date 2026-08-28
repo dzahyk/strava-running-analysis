@@ -187,15 +187,15 @@ body,
 .section-divider {
     width: 100%;
 
-    margin-top: 2.75rem;
-    margin-bottom: 2.10rem;
+    margin-top: 3.25rem;
+    margin-bottom: 2.00rem;
 
     border-top: 1px solid var(--border-subtle);
 }
 
 
 .section-kicker {
-    margin-bottom: 0.42rem;
+    margin-bottom: 0.50rem;
 
     color: var(--accent-strava);
 
@@ -209,7 +209,7 @@ body,
 
 .section-heading {
     margin-top: 0;
-    margin-bottom: 0.48rem;
+    margin-bottom: 0.55rem;
 
     color: var(--text-primary);
 
@@ -225,7 +225,7 @@ body,
     max-width: 760px;
 
     margin-top: 0;
-    margin-bottom: 1.65rem;
+    margin-bottom: 1.75rem;
 
     color: var(--text-muted);
 
@@ -454,6 +454,40 @@ body,
 }
 
 
+/* V2.2 KPI micro-interactions */
+
+.kpi-card {
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        background-color 160ms ease;
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+    .kpi-card:hover {
+        transform: translateY(-2px);
+
+        background: rgba(17, 24, 39, 0.96);
+
+        box-shadow:
+            0 10px 24px rgba(0, 0, 0, 0.18),
+            0 2px 8px rgba(252, 76, 2, 0.06);
+    }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+    .kpi-card {
+        transition: none;
+    }
+
+    .kpi-card:hover {
+        transform: none;
+    }
+}
+
+
 /* ------------------------------------------------------------
    11. Responsive adjustments
    ------------------------------------------------------------ */
@@ -484,5 +518,87 @@ body,
 
     .kpi-card {
         min-height: auto;
+    }
+}
+
+
+/* V2.2 active-state polish */
+
+/*
+   Analysis Month select.
+   Keep the selector scoped to Streamlit's selectbox so other
+   BaseWeb controls are not unintentionally restyled.
+*/
+div[data-testid="stSelectbox"]
+div[data-baseweb="select"] > div {
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        background-color 150ms ease;
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+    div[data-testid="stSelectbox"]
+    div[data-baseweb="select"]:hover > div {
+        border-color:
+            rgba(252, 76, 2, 0.55) !important;
+    }
+}
+
+
+/*
+   Focus state.
+   The orange halo communicates keyboard/mouse focus without
+   creating the strong red-looking outline seen previously.
+*/
+div[data-testid="stSelectbox"]
+div[data-baseweb="select"]:focus-within > div {
+    border-color: #FC4C02 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(252, 76, 2, 0.12) !important;
+}
+
+
+/*
+   Active analysis context.
+   This is intentionally a state indicator, not a hover effect,
+   because the pill itself is not interactive.
+*/
+.context-pill-accent {
+    border-color:
+        rgba(252, 76, 2, 0.52);
+
+    background:
+        rgba(252, 76, 2, 0.09);
+}
+
+
+.context-pill-accent::before {
+    display: inline-block;
+
+    width: 0.38rem;
+    height: 0.38rem;
+
+    margin-right: 0.38rem;
+
+    border-radius: 999px;
+
+    background: #FC4C02;
+
+    content: "";
+}
+
+
+/*
+   Accessibility:
+   remove cosmetic transitions when the operating system requests
+   reduced motion.
+*/
+@media (prefers-reduced-motion: reduce) {
+    div[data-testid="stSelectbox"]
+    div[data-baseweb="select"] > div {
+        transition: none;
     }
 }
