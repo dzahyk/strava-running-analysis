@@ -64,6 +64,22 @@ st.session_state.setdefault(
     0,
 )
 
+# V2.3 dynamic feedback state
+st.session_state.setdefault(
+    "v23_pending_toast",
+    None,
+)
+
+st.session_state.setdefault(
+    "v23_initial_data_loaded",
+    False,
+)
+
+st.session_state.setdefault(
+    "v23_entrance_complete",
+    False,
+)
+
 
 # Normalize invalid category state
 if (
@@ -98,6 +114,52 @@ def format_month_option(value: str) -> str:
     return pd.to_datetime(
         f"{value}-01"
     ).strftime("%B %Y")
+
+
+# ------------------------------------------------------------
+# V2.3 interaction feedback helpers
+# ------------------------------------------------------------
+
+def queue_toast(message: str) -> None:
+    """Queue one transient message for the next render."""
+    st.session_state["v23_pending_toast"] = message
+
+
+def show_pending_toast() -> None:
+    """Render and consume the current transient message."""
+    message = st.session_state.pop(
+        "v23_pending_toast",
+        None,
+    )
+
+    if message:
+        st.toast(
+            message,
+            duration=3,
+        )
+
+
+def handle_month_change() -> None:
+    """Provide feedback after the analysis month changes."""
+    selected = st.session_state["analysis_month"]
+
+    queue_toast(
+        "Analysis updated · "
+        + format_month_option(selected)
+    )
+
+
+def handle_target_change() -> None:
+    """Provide feedback after the monthly target changes."""
+    target = float(
+        st.session_state[
+            "monthly_distance_target_km"
+        ]
+    )
+
+    queue_toast(
+        f"Monthly target updated · {target:,.0f} km"
+    )
 
 
 # ------------------------------------------------------------
@@ -353,6 +415,24 @@ def load_dashboard_data(
 
 load_css()
 
+# Entrance motion belongs to the first page render only.
+if st.session_state["v23_entrance_complete"]:
+    st.markdown(
+        """
+        <style>
+        .app-eyebrow,
+        .app-title,
+        .app-subtitle,
+        .kpi-card,
+        div[data-testid="stPlotlyChart"],
+        div[data-testid="stDataFrame"] {
+            animation: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 available_months = load_available_month_options()
 
 month_options = [
@@ -397,7 +477,11 @@ with filter_col:
         index=0,
         format_func=format_month_option,
         key="analysis_month",
+        on_change=handle_month_change,
     )
+
+# A callback may have queued feedback before this rerun.
+show_pending_toast()
 
 selected_year_month = (
     None
@@ -410,6 +494,36 @@ selected_year_month = (
 # Load dashboard data
 # ------------------------------------------------------------
 
+initial_data_load = not st.session_state[
+    "v23_initial_data_loaded"
+]
+
+loading_placeholder = st.empty()
+
+if initial_data_load:
+    loading_placeholder.markdown(
+        """
+        <div class="v23-loading-shell">
+            <div class="v23-loading-meta">
+                Preparing your running intelligence
+            </div>
+
+            <div class="v23-skeleton-kpis">
+                <div class="v23-skeleton-card"></div>
+                <div class="v23-skeleton-card"></div>
+                <div class="v23-skeleton-card"></div>
+                <div class="v23-skeleton-card"></div>
+            </div>
+
+            <div class="v23-skeleton-charts">
+                <div class="v23-skeleton-chart"></div>
+                <div class="v23-skeleton-chart"></div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 (
     kpi_df,
     monthly_df,
@@ -421,8 +535,65 @@ selected_year_month = (
     st.session_state["distance_category_filter"],
 )
 
+if initial_data_load:
+    loading_placeholder.empty()
+
+    st.session_state[
+        "v23_initial_data_loaded"
+    ] = True
+
+    st.toast(
+        "Dashboard ready · running data loaded",
+        duration=2,
+    )
+
 if kpi_df.empty:
-    st.error("KPI data could not be loaded.")
+    active_empty_category = st.session_state[
+        "distance_category_filter"
+    ]
+
+    st.markdown(
+        """
+        <div class="v23-empty-state">
+            <div class="v23-empty-icon">↗</div>
+
+            <div class="v23-empty-eyebrow">
+                NO MATCHING RUNS
+            </div>
+
+            <h3>
+                This analysis view has no activities
+            </h3>
+
+            <p>
+                Try another month or clear the active
+                distance-category filter to continue exploring.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if active_empty_category is not None:
+        if st.button(
+            "Clear category filter",
+            key="empty_state_clear_category",
+            type="primary",
+        ):
+            st.session_state[
+                "distance_category_filter"
+            ] = None
+
+            st.session_state[
+                "distance_category_chart_version"
+            ] += 1
+
+            queue_toast(
+                "Category filter cleared"
+            )
+
+            st.rerun()
+
     st.stop()
 
 if monthly_df.empty:
@@ -597,6 +768,7 @@ monthly_distance_target_km = st.number_input(
     step=5.0,
     format="%.0f",
     key="monthly_distance_target_km",
+    on_change=handle_target_change,
     help=(
         "Sets the horizontal reference line on Monthly Running Distance. "
         "This personal target does not change analytics or filters."
@@ -1063,7 +1235,25 @@ with pattern_col2:
             st.session_state[
                 "distance_category_chart_version"
             ] += 1
+
+            queue_toast(
+                "Category filter cleared"
+            )
+
             st.rerun()
+
+    st.markdown(
+        """
+        <div class="v23-interaction-hint">
+            <span class="v23-interaction-hint-icon">↗</span>
+            <span>
+                Click a distance bar to filter KPI,
+                weekday patterns, and ranked runs
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     category_selection = st.plotly_chart(
         category_fig,
@@ -1126,6 +1316,11 @@ with pattern_col2:
             st.session_state[
                 "distance_category_filter"
             ] = clicked_category
+
+            queue_toast(
+                f"Filtered to {clicked_category} runs"
+            )
+
             st.rerun()
 
 
@@ -1267,6 +1462,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+# Subsequent Streamlit reruns should not replay
+# the full-page entrance sequence.
+st.session_state["v23_entrance_complete"] = True
 
 st.markdown(
     (
