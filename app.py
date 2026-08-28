@@ -9,6 +9,8 @@ Data flow:
         -> Streamlit + Plotly
 """
 
+from pathlib import Path
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -38,6 +40,27 @@ st.set_page_config(
 # ------------------------------------------------------------
 # Helper functions
 # ------------------------------------------------------------
+
+def load_css() -> None:
+    """Load the external V2.1 dashboard stylesheet."""
+    css_path = Path(__file__).resolve().parent / "style.css"
+    css = css_path.read_text(encoding="utf-8")
+
+    st.markdown(
+        f"<style>{css}</style>",
+        unsafe_allow_html=True,
+    )
+
+
+def format_month_option(value: str) -> str:
+    """Convert YYYY-MM month values to a readable label."""
+    if value == "All Months":
+        return value
+
+    return pd.to_datetime(
+        f"{value}-01"
+    ).strftime("%B %Y")
+
 
 def format_pace(pace_min_km: float) -> str:
     """
@@ -122,12 +145,7 @@ def load_dashboard_data(
 # Dashboard header and month filter
 # ------------------------------------------------------------
 
-st.title("🏃 Strava Running Analysis")
-
-st.caption(
-    "V2 interactive dashboard powered by DuckDB SQL, "
-    "Streamlit, Plotly, and a sanitized running dataset."
-)
+load_css()
 
 available_months = load_available_month_options()
 
@@ -136,15 +154,42 @@ month_options = [
     *available_months,
 ]
 
-filter_col, _ = st.columns(
-    [1, 3]
+header_col, filter_col = st.columns(
+    [3.2, 1.0],
+    gap="large",
 )
 
+with header_col:
+    st.markdown(
+        """
+        <div class="app-eyebrow">
+            Running Analytics · V2.1
+        </div>
+
+        <h1 class="app-title">
+            Strava Running Analysis
+        </h1>
+
+        <p class="app-subtitle">
+            Personal running intelligence powered by DuckDB SQL,
+            Streamlit, Plotly, and a sanitized analytical dataset.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
+
 with filter_col:
+    st.markdown(
+        '<div class="app-eyebrow">Analysis Control</div>',
+        unsafe_allow_html=True,
+    )
+
     selected_month = st.selectbox(
         "Analysis Month",
         options=month_options,
         index=0,
+        format_func=format_month_option,
+        key="analysis_month",
     )
 
 selected_year_month = (
@@ -203,20 +248,34 @@ end_date = pd.to_datetime(
     kpi["end_date"]
 ).strftime("%d %b %Y")
 
-st.write(
-    f"**Current view:** {selected_month}"
+view_label = format_month_option(
+    selected_month
 )
 
-st.write(
-    f"**Analysis period:** "
-    f"{start_date} — {end_date}"
+st.markdown(
+    (
+        '<div class="analysis-context">'
+        f'<span class="context-pill context-pill-accent">'
+        f'VIEW · {view_label.upper()}'
+        '</span>'
+        f'<span class="context-pill">'
+        f'PERIOD · {start_date.upper()} — {end_date.upper()}'
+        '</span>'
+        '</div>'
+    ),
+    unsafe_allow_html=True,
 )
 
 if selected_year_month is not None:
-    st.caption(
-        "The KPI cards, running patterns, and ranked runs "
-        "reflect the selected month. Monthly trend charts "
-        "remain on the full analysis period for context."
+    st.markdown(
+        """
+        <div class="dashboard-note">
+            KPI cards, running patterns, and ranked runs reflect
+            the selected month. Monthly trend charts remain on
+            the full analysis period to preserve temporal context.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
