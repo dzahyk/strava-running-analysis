@@ -120,17 +120,35 @@ CHART_CYAN = "#22D3EE"
 CHART_TRANSPARENT = "rgba(0, 0, 0, 0)"
 
 
+
+# V2.3 Plotly interaction configuration
+PLOTLY_CONFIG = {
+    "displaylogo": False,
+    "responsive": True,
+    "scrollZoom": False,
+    "displayModeBar": "hover",
+    "doubleClick": "reset+autosize",
+    "showTips": False,
+    "modeBarButtonsToRemove": [
+        "lasso2d",
+        "select2d",
+        "autoScale2d",
+    ],
+}
+
 def apply_chart_theme(
     fig,
     *,
     show_y_grid: bool = True,
+    uirevision: str = "v23",
+    time_series: bool = False,
 ) -> None:
-    """Apply the shared Midnight Athletic Plotly styling."""
+    """Apply the shared V2.3 Midnight Athletic Plotly styling."""
     fig.update_layout(
         paper_bgcolor=CHART_TRANSPARENT,
         plot_bgcolor=CHART_TRANSPARENT,
         font=dict(
-            family="Inter, sans-serif",
+            family="Inter, system-ui, sans-serif",
             color=CHART_TEXT_SECONDARY,
             size=12,
         ),
@@ -149,19 +167,36 @@ def apply_chart_theme(
             b=24,
         ),
         hoverlabel=dict(
-            bgcolor="#1E293B",
-            bordercolor=CHART_ORANGE,
+            bgcolor="#0F172A",
+            bordercolor="rgba(34, 211, 238, 0.24)",
             font=dict(
+                family="Inter, system-ui, sans-serif",
                 color=CHART_TEXT_PRIMARY,
-                size=13,
+                size=12,
             ),
+            align="left",
+            namelength=-1,
         ),
         legend=dict(
+            orientation="h",
+            x=0,
+            y=1.06,
+            xanchor="left",
+            yanchor="bottom",
             bgcolor=CHART_TRANSPARENT,
             font=dict(
                 color=CHART_TEXT_MUTED,
+                size=11,
             ),
+            itemclick="toggle",
+            itemdoubleclick="toggleothers",
         ),
+        transition=dict(
+            duration=280,
+            easing="cubic-in-out",
+        ),
+        uirevision=uirevision,
+        hoverdistance=80,
     )
 
     fig.update_xaxes(
@@ -190,6 +225,21 @@ def apply_chart_theme(
             color=CHART_TEXT_MUTED,
         ),
     )
+
+    if time_series:
+        fig.update_layout(
+            hovermode="x unified",
+            spikedistance=-1,
+        )
+
+        fig.update_xaxes(
+            showspikes=True,
+            spikemode="across",
+            spikesnap="cursor",
+            spikecolor="rgba(34, 211, 238, 0.48)",
+            spikethickness=1,
+            spikedash="dot",
+        )
 
 
 def render_kpi_card(
@@ -644,11 +694,14 @@ with monthly_chart_col1:
 
     apply_chart_theme(
         monthly_distance_fig,
+        uirevision="monthly-distance-v23",
     )
 
     st.plotly_chart(
         monthly_distance_fig,
         width="stretch",
+        key="monthly_distance_chart_v23",
+        config=PLOTLY_CONFIG,
     )
 
 
@@ -740,14 +793,7 @@ with monthly_chart_col2:
         ],
     )
 
-    monthly_pace_fig.update_xaxes(
-        showspikes=True,
-        spikemode="across",
-        spikesnap="cursor",
-        spikecolor="rgba(148, 163, 184, 0.30)",
-        spikethickness=1,
-        spikedash="dot",
-    )
+
 
     monthly_pace_fig.add_hline(
         y=overall_weighted_pace,
@@ -767,11 +813,15 @@ with monthly_chart_col2:
 
     apply_chart_theme(
         monthly_pace_fig,
+        uirevision="monthly-pace-v23",
+        time_series=True,
     )
 
     st.plotly_chart(
         monthly_pace_fig,
         width="stretch",
+        key="monthly_pace_chart_v23",
+        config=PLOTLY_CONFIG,
     )
 
     st.caption(
@@ -888,11 +938,14 @@ with pattern_col1:
 
     apply_chart_theme(
         weekday_fig,
+        uirevision="weekday-v23",
     )
 
     st.plotly_chart(
         weekday_fig,
         width="stretch",
+        key="weekday_chart_v23",
+        config=PLOTLY_CONFIG,
     )
 
 
@@ -973,6 +1026,7 @@ with pattern_col2:
 
     apply_chart_theme(
         category_fig,
+        uirevision="distance-category-v23",
     )
 
     # V2.2 native distance-category selection
@@ -1014,7 +1068,7 @@ with pattern_col2:
     category_selection = st.plotly_chart(
         category_fig,
         width="stretch",
-            key=(
+        key=(
             "distance_category_cross_filter_"
             + str(
                 st.session_state[
@@ -1022,9 +1076,10 @@ with pattern_col2:
                 ]
             )
         ),
+        config=PLOTLY_CONFIG,
         on_select="rerun",
         selection_mode="points",
-)
+    )
 
     selected_points = (
         category_selection.selection.points
