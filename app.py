@@ -62,6 +62,25 @@ def format_month_option(value: str) -> str:
     ).strftime("%B %Y")
 
 
+def render_kpi_card(
+    label: str,
+    value: str,
+    meta: str,
+    accent_class: str,
+) -> None:
+    """Render a reusable V2.1 KPI card."""
+    st.markdown(
+        (
+            f'<div class="kpi-card {accent_class}">'
+            f'<div class="kpi-label">{label}</div>'
+            f'<p class="kpi-value">{value}</p>'
+            f'<div class="kpi-meta">{meta}</div>'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
+
+
 def format_pace(pace_min_km: float) -> str:
     """
     Convert decimal pace in minutes/km to M:SS /km.
@@ -270,9 +289,12 @@ if selected_year_month is not None:
     st.markdown(
         """
         <div class="dashboard-note">
-            KPI cards, running patterns, and ranked runs reflect
-            the selected month. Monthly trend charts remain on
-            the full analysis period to preserve temporal context.
+            <span class="dashboard-note-icon">ℹ️</span>
+            <span>
+                KPI cards, running patterns, and ranked runs reflect
+                the selected month. Monthly trend charts remain on
+                the full analysis period to preserve temporal context.
+            </span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -283,30 +305,43 @@ if selected_year_month is not None:
 # KPI cards
 # ------------------------------------------------------------
 
-col1, col2, col3, col4 = st.columns(4)
+kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(
+    4,
+    gap="medium",
+)
 
-with col1:
-    st.metric(
+with kpi_col1:
+    render_kpi_card(
         label="Total Distance",
         value=f"{float(kpi['total_distance_km']):,.2f} km",
+        meta="Across the selected analysis period",
+        accent_class="kpi-distance",
     )
 
-with col2:
-    st.metric(
+with kpi_col2:
+    render_kpi_card(
         label="Runs",
         value=f"{int(kpi['total_runs']):,}",
+        meta="Recorded running activities",
+        accent_class="kpi-runs",
     )
 
-with col3:
-    st.metric(
-        label="Overall Weighted Pace",
-        value=format_pace(float(kpi["weighted_pace_min_km"])),
+with kpi_col3:
+    render_kpi_card(
+        label="Weighted Pace",
+        value=format_pace(
+            float(kpi["weighted_pace_min_km"])
+        ),
+        meta="Total moving time ÷ total distance",
+        accent_class="kpi-pace",
     )
 
-with col4:
-    st.metric(
+with kpi_col4:
+    render_kpi_card(
         label="Longest Run",
         value=f"{float(kpi['longest_run_km']):.2f} km",
+        meta="Maximum activity distance",
+        accent_class="kpi-longest",
     )
 
 

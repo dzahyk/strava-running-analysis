@@ -128,13 +128,13 @@ body,
 .app-subtitle {
     max-width: 760px;
 
-    margin-top: var(--space-sm);
-    margin-bottom: 0;
+    margin-top: 0.75rem;
+    margin-bottom: 0.35rem;
 
     color: var(--text-muted);
 
     font-size: 0.95rem;
-    line-height: 1.6;
+    line-height: 1.65;
 }
 
 
@@ -146,9 +146,10 @@ body,
     display: flex;
     flex-wrap: wrap;
 
-    gap: 0.55rem;
+    gap: 0.65rem;
 
-    margin-top: var(--space-md);
+    margin-top: 1.10rem;
+    margin-bottom: 1.40rem;
 }
 
 
@@ -214,9 +215,12 @@ body,
 .kpi-card {
     position: relative;
 
-    min-height: 132px;
+    min-height: 140px;
 
-    padding: 1.05rem 1.10rem;
+    margin-top: 0.15rem;
+    margin-bottom: 1.15rem;
+
+    padding: 1.20rem 1.20rem;
 
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
@@ -264,7 +268,7 @@ body,
 
 
 .kpi-label {
-    margin-bottom: 0.70rem;
+    margin-bottom: 0.82rem;
 
     color: var(--text-muted);
 
@@ -290,29 +294,21 @@ body,
 
 
 .kpi-meta {
-    margin-top: 0.55rem;
+    margin-top: 0.72rem;
 
-    color: var(--text-subtle);
+    color: var(--text-muted);
 
     font-size: 0.75rem;
+    font-weight: 400;
     line-height: 1.45;
 }
 
 
 /* KPI accent variants */
 
-.kpi-distance {
-    --kpi-accent: var(--accent-distance);
-}
-
-.kpi-runs {
-    --kpi-accent: var(--accent-runs);
-}
-
-.kpi-pace {
-    --kpi-accent: var(--accent-pace);
-}
-
+.kpi-distance,
+.kpi-runs,
+.kpi-pace,
 .kpi-longest {
     --kpi-accent: var(--accent-strava);
 }
@@ -323,20 +319,38 @@ body,
    ------------------------------------------------------------ */
 
 .dashboard-note {
-    padding: 0.72rem 0.90rem;
+    display: flex;
+    align-items: flex-start;
 
-    border-left: 2px solid var(--border-medium);
+    gap: 0.55rem;
+
+    margin-top: 0.20rem;
+    margin-bottom: 1.60rem;
+
+    padding: 0.78rem 0.95rem;
+
+    border-left: 2px solid var(--accent-strava);
 
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 
-    background: rgba(30, 41, 59, 0.34);
+    background: rgba(30, 41, 59, 0.42);
 
     color: var(--text-muted);
 
     font-size: 0.78rem;
-    font-style: italic;
+    font-style: normal;
+    font-weight: 400;
 
     line-height: 1.55;
+}
+
+
+.dashboard-note-icon {
+    flex: 0 0 auto;
+
+    margin-top: 0.02rem;
+
+    font-size: 0.82rem;
 }
 
 
