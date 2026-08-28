@@ -2193,3 +2193,97 @@ input,
         scroll-behavior: auto !important;
     }
 }
+
+/* ============================================================
+   V2.4 — Motion visualization
+   ============================================================ */
+
+@keyframes v24-chart-rise {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.995);
+        filter: blur(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes v24-marker-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.55);
+    }
+
+    70% {
+        opacity: 1;
+        transform: scale(1.08);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+/* Chart container entrance */
+
+div[data-testid="stPlotlyChart"] {
+    animation:
+        v24-chart-rise
+        520ms
+        cubic-bezier(0.22, 1, 0.36, 1)
+        both;
+}
+
+
+/* Lollipop marker entrance */
+
+div[data-testid="stPlotlyChart"]
+.scatterlayer .point {
+    transform-box: fill-box;
+    transform-origin: center;
+
+    animation:
+        v24-marker-pop
+        420ms
+        cubic-bezier(0.22, 1, 0.36, 1)
+        both;
+}
+
+
+/* Plotly bars get a softer visual response */
+
+div[data-testid="stPlotlyChart"]
+.barlayer path {
+    transition:
+        opacity 180ms ease,
+        filter 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    div[data-testid="stPlotlyChart"]
+    .barlayer path:hover {
+        filter:
+            brightness(1.12)
+            drop-shadow(
+                0 0 8px rgba(34, 211, 238, 0.12)
+            );
+    }
+}
+
+
+/* Do not animate forever after rerenders */
+
+@media (prefers-reduced-motion: reduce) {
+    div[data-testid="stPlotlyChart"],
+    div[data-testid="stPlotlyChart"]
+    .scatterlayer .point {
+        animation: none !important;
+    }
+}
+
