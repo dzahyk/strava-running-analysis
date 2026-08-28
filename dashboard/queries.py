@@ -30,6 +30,26 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SQL_DIR = PROJECT_ROOT / "sql"
 
+DISTANCE_CATEGORY_LABELS = {
+    "Short": "Short (<5 km)",
+    "Medium": "Medium (5-<10 km)",
+    "Long": "Long (10-<15 km)",
+    "Very Long": "Very Long (>=15 km)",
+}
+
+
+def _distance_category_label(
+    distance_category: str,
+) -> str:
+    """Map canonical dashboard category to SQL label."""
+    try:
+        return DISTANCE_CATEGORY_LABELS[distance_category]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unsupported distance category: {distance_category}"
+        ) from exc
+
+
 SQL_FILES = [
     SQL_DIR / "01_create_table.sql",
     SQL_DIR / "02_kpi_queries.sql",
@@ -87,14 +107,16 @@ def get_available_months(
 def get_kpi_summary(
     connection: duckdb.DuckDBPyConnection,
     year_month: str | None = None,
+    distance_category: str | None = None,
 ) -> pd.DataFrame:
     """
-    Return overall or month-filtered KPI metrics.
+    Return KPI metrics for the active dashboard context.
 
-    If year_month is None, the existing overall KPI view is used.
-    Otherwise, metrics are recalculated from v_run_details.
+    With no filters, preserve the existing overall KPI view.
+    When month and/or distance category filters are active,
+    recalculate metrics from v_run_details.
     """
-    if year_month is None:
+    if year_month is None and distance_category is None:
         return connection.execute(
             """
             SELECT *
@@ -102,47 +124,52 @@ def get_kpi_summary(
             """
         ).df()
 
+    filters = []
+    parameters = []
+
+    if year_month is not None:
+        filters.append("year_month = ?")
+        parameters.append(year_month)
+
+    if distance_category is not None:
+        filters.append("distance_category = ?")
+        parameters.append(_distance_category_label(distance_category))
+
+    where_clause = " AND ".join(filters)
+
     return connection.execute(
-        """
+        f"""
         SELECT
             COUNT(*) AS total_runs,
-
             ROUND(
                 SUM(distance_km),
                 2
             ) AS total_distance_km,
-
             ROUND(
                 AVG(distance_km),
                 2
             ) AS average_distance_km,
-
             ROUND(
                 MAX(distance_km),
                 2
             ) AS longest_run_km,
-
             ROUND(
                 SUM(moving_time_sec) / 3600.0,
                 2
             ) AS total_moving_hours,
-
             ROUND(
                 (SUM(moving_time_sec) / 60.0)
                 / NULLIF(SUM(distance_km), 0),
                 4
             ) AS weighted_pace_min_km,
-
             MIN(activity_date) AS start_date,
-
             MAX(activity_date) AS end_date
-
         FROM v_run_details
-
-        WHERE year_month = ?
+        WHERE {where_clause}
         """,
-        [year_month],
+        parameters,
     ).df()
+
 
 
 # ------------------------------------------------------------
@@ -174,9 +201,10 @@ def get_monthly_summary(
 def get_weekday_summary(
     connection: duckdb.DuckDBPyConnection,
     year_month: str | None = None,
+    distance_category: str | None = None,
 ) -> pd.DataFrame:
-    """Return overall or month-filtered weekday metrics."""
-    if year_month is None:
+    """Return weekday metrics for the active dashboard context."""
+    if year_month is None and distance_category is None:
         return connection.execute(
             """
             SELECT *
@@ -185,38 +213,45 @@ def get_weekday_summary(
             """
         ).df()
 
+    filters = []
+    parameters = []
+
+    if year_month is not None:
+        filters.append("year_month = ?")
+        parameters.append(year_month)
+
+    if distance_category is not None:
+        filters.append("distance_category = ?")
+        parameters.append(_distance_category_label(distance_category))
+
+    where_clause = " AND ".join(filters)
+
     return connection.execute(
-        """
+        f"""
         SELECT
             weekday_number,
             day_name,
-
             COUNT(*) AS total_runs,
-
             ROUND(
                 SUM(distance_km),
                 2
             ) AS total_distance_km,
-
             ROUND(
                 (SUM(moving_time_sec) / 60.0)
                 / NULLIF(SUM(distance_km), 0),
                 4
             ) AS weighted_pace_min_km
-
         FROM v_run_details
-
-        WHERE year_month = ?
-
+        WHERE {where_clause}
         GROUP BY
             weekday_number,
             day_name
-
         ORDER BY
             weekday_number
         """,
-        [year_month],
+        parameters,
     ).df()
+
 
 
 # ------------------------------------------------------------
@@ -284,19 +319,18 @@ def get_longest_runs(
     connection: duckdb.DuckDBPyConnection,
     limit: int = 10,
     year_month: str | None = None,
+    distance_category: str | None = None,
 ) -> pd.DataFrame:
     """
-    Return the longest runs.
+    Return ranked longest runs for the active dashboard context.
 
-    For the full dataset, the existing SQL ranking view is used.
-
-    For a selected month, ROW_NUMBER() is recalculated after the
-    month filter so ranking restarts at 1 inside that month.
+    Ranking is recalculated after month/category filtering so
+    ROW_NUMBER() always restarts at 1 for the active subset.
     """
     if limit < 1:
         raise ValueError("limit must be at least 1")
 
-    if year_month is None:
+    if year_month is None and distance_category is None:
         return connection.execute(
             """
             SELECT *
@@ -307,14 +341,28 @@ def get_longest_runs(
             [limit],
         ).df()
 
+    filters = []
+    parameters = []
+
+    if year_month is not None:
+        filters.append("year_month = ?")
+        parameters.append(year_month)
+
+    if distance_category is not None:
+        filters.append("distance_category = ?")
+        parameters.append(_distance_category_label(distance_category))
+
+    where_clause = " AND ".join(filters)
+
+    parameters.append(limit)
+
     return connection.execute(
-        """
+        f"""
         WITH filtered_runs AS (
             SELECT *
             FROM v_run_details
-            WHERE year_month = ?
+            WHERE {where_clause}
         ),
-
         ranked_runs AS (
             SELECT
                 ROW_NUMBER() OVER (
@@ -323,7 +371,6 @@ def get_longest_runs(
                         activity_date ASC,
                         activity_id ASC
                 ) AS distance_rank,
-
                 activity_id,
                 activity_date,
                 distance_km,
@@ -333,17 +380,12 @@ def get_longest_runs(
                 elevation_gain_m,
                 year_month,
                 day_name
-
             FROM filtered_runs
         )
-
         SELECT *
         FROM ranked_runs
         WHERE distance_rank <= ?
         ORDER BY distance_rank
         """,
-        [
-            year_month,
-            limit,
-        ],
+        parameters,
     ).df()

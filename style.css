@@ -660,3 +660,48 @@ div[data-testid="stNumberInput"]:focus-within > div {
         transition: none;
     }
 }
+
+/* V2.2 cross-filter status */
+
+.cross-filter-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+
+    margin-top: 0.15rem;
+    margin-bottom: 1rem;
+
+    padding: 0.42rem 0.70rem;
+
+    border: 1px solid rgba(252, 76, 2, 0.36);
+    border-radius: 999px;
+
+    background: rgba(252, 76, 2, 0.08);
+}
+
+.cross-filter-status::before {
+    width: 0.40rem;
+    height: 0.40rem;
+
+    border-radius: 999px;
+
+    background: #FC4C02;
+
+    content: "";
+}
+
+.cross-filter-status-label {
+    color: #94A3B8;
+
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.cross-filter-status-value {
+    color: #F8FAFC;
+
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}

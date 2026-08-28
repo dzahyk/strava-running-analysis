@@ -45,6 +45,35 @@ st.session_state.setdefault(
 )
 
 
+# V2.2 distance category cross-filter state
+DISTANCE_CATEGORY_OPTIONS = (
+    "Short",
+    "Medium",
+    "Long",
+    "Very Long",
+)
+
+st.session_state.setdefault(
+    "distance_category_filter",
+    None,
+)
+
+
+st.session_state.setdefault(
+    "distance_category_chart_version",
+    0,
+)
+
+
+# Normalize invalid category state
+if (
+    st.session_state["distance_category_filter"] is not None
+    and st.session_state["distance_category_filter"]
+    not in DISTANCE_CATEGORY_OPTIONS
+):
+    st.session_state["distance_category_filter"] = None
+
+
 
 # ------------------------------------------------------------
 # Helper functions
@@ -213,20 +242,30 @@ def load_available_month_options() -> list[str]:
 @st.cache_data
 def load_dashboard_data(
     year_month: str | None,
+    distance_category: str | None = None,
 ):
     """
     Build the in-memory DuckDB database and return dashboard data.
 
-    The monthly trend remains unfiltered for temporal context.
-    KPI, weekday, category, and ranked-run data respect the
-    selected month.
+    Monthly trends remain unfiltered for temporal context.
+    KPI, weekday, and ranked-run data respect the active month
+    and optional distance-category cross-filter.
+
+    The category distribution itself remains month-filtered only
+    so all categories stay available for interactive selection.
     """
+    if distance_category is None:
+        distance_category = st.session_state.get(
+            "distance_category_filter"
+        )
+
     connection = initialize_database()
 
     try:
         kpi_df = get_kpi_summary(
             connection,
             year_month=year_month,
+            distance_category=distance_category,
         )
 
         monthly_df = get_monthly_summary(
@@ -236,6 +275,7 @@ def load_dashboard_data(
         weekday_df = get_weekday_summary(
             connection,
             year_month=year_month,
+            distance_category=distance_category,
         )
 
         category_df = get_distance_categories(
@@ -247,6 +287,7 @@ def load_dashboard_data(
             connection,
             limit=10,
             year_month=year_month,
+            distance_category=distance_category,
         )
 
         return (
@@ -259,6 +300,7 @@ def load_dashboard_data(
 
     finally:
         connection.close()
+
 
 
 # ------------------------------------------------------------
@@ -405,6 +447,26 @@ if selected_year_month is not None:
 # ------------------------------------------------------------
 # KPI cards
 # ------------------------------------------------------------
+
+# V2.2 active cross-filter context
+active_distance_category = st.session_state[
+    "distance_category_filter"
+]
+
+if active_distance_category is not None:
+    st.markdown(
+        f"""
+        <div class="cross-filter-status">
+            <span class="cross-filter-status-label">
+                ACTIVE CATEGORY
+            </span>
+            <span class="cross-filter-status-value">
+                {active_distance_category.upper()}
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(
     4,
@@ -917,10 +979,104 @@ with pattern_col2:
         category_fig,
     )
 
-    st.plotly_chart(
+    # V2.2 native distance-category selection
+    active_distance_category = st.session_state[
+        "distance_category_filter"
+    ]
+
+    if active_distance_category is not None:
+        category_fig.update_traces(
+            marker_color=[
+                (
+                    "#FC4C02"
+                    if str(category_label).startswith(
+                        active_distance_category
+                    )
+                    else "#475569"
+                )
+                for category_label in (
+                    category_chart_df[
+                        "distance_category"
+                    ]
+                )
+            ],
+        )
+
+        if st.button(
+            "Clear category filter",
+            key="clear_distance_category_filter",
+            type="secondary",
+        ):
+            st.session_state[
+                "distance_category_filter"
+            ] = None
+            st.session_state[
+                "distance_category_chart_version"
+            ] += 1
+            st.rerun()
+
+    category_selection = st.plotly_chart(
         category_fig,
         width="stretch",
+            key=(
+            "distance_category_cross_filter_"
+            + str(
+                st.session_state[
+                    "distance_category_chart_version"
+                ]
+            )
+        ),
+        on_select="rerun",
+        selection_mode="points",
+)
+
+    selected_points = (
+        category_selection.selection.points
     )
+
+    if selected_points:
+        selected_point = selected_points[0]
+
+        selection_values = [
+            selected_point.get("x"),
+            selected_point.get("y"),
+        ]
+
+        customdata = selected_point.get(
+            "customdata"
+        )
+
+        if isinstance(
+            customdata,
+            (list, tuple),
+        ):
+            selection_values.extend(customdata)
+
+        clicked_category = next(
+            (
+                category
+                for category in DISTANCE_CATEGORY_OPTIONS
+                if any(
+                    str(value).startswith(category)
+                    for value in selection_values
+                    if value is not None
+                )
+            ),
+            None,
+        )
+
+        if (
+            clicked_category is not None
+            and clicked_category
+            != st.session_state[
+                "distance_category_filter"
+            ]
+        ):
+            st.session_state[
+                "distance_category_filter"
+            ] = clicked_category
+            st.rerun()
+
 
 
 st.markdown(
