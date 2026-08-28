@@ -319,11 +319,12 @@ with header_col:
     st.markdown(
         """
         <div class="app-eyebrow">
-            Running Analytics · V2.1
+            Running Analytics · V2.3
         </div>
 
         <h1 class="app-title">
-            Strava Running Analysis
+            Strava Running
+            <span class="app-title-gradient">Analysis</span>
         </h1>
 
         <p class="app-subtitle">
