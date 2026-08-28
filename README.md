@@ -6,6 +6,8 @@ The project evolves from exploratory analysis in Python and Pandas into a reprod
 
 ## Dashboard Preview
 
+**Live Dashboard:** https://dzahyk-strava-running-analysis.streamlit.app
+
 ![V2 Strava Running Analysis dashboard](images/dashboard/01_v2_dashboard_all_months.png)
 
 The dashboard combines reconciled running KPIs, SQL-based analytical summaries, interactive month filtering, and ranked running performances.
