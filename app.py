@@ -473,280 +473,21 @@ with filter_col:
 # V2.3 anti-flicker interactive fragment
 # ------------------------------------------------------------
 
+# ------------------------------------------------------------
+# V2.3 isolated monthly trend fragment
+# ------------------------------------------------------------
+
 @st.fragment
-def render_interactive_dashboard() -> None:
+def render_monthly_trends(
+    monthly_df: pd.DataFrame,
+) -> None:
     """
-    Render interactive dashboard content independently.
+    Render target-dependent monthly trends independently.
 
-    Month, target, and category interactions rerun this
-    fragment instead of the complete Streamlit application.
+    Changing the personal distance target reruns only this
+    fragment instead of the complete interactive dashboard.
     """
-
-    with filter_placeholder.container():
-        st.markdown(
-            '<div class="app-eyebrow">Analysis Control</div>',
-            unsafe_allow_html=True,
-        )
-
-        selected_month = st.selectbox(
-            "Analysis Month",
-            options=month_options,
-            index=0,
-            format_func=format_month_option,
-            key="analysis_month",
-            on_change=handle_month_change,
-        )
-
-    # Callbacks may queue feedback before a fragment rerun.
     show_pending_toast()
-
-    selected_year_month = (
-        None
-        if selected_month == "All Months"
-        else selected_month
-    )
-
-
-    # ------------------------------------------------------------
-    # Load dashboard data
-    # ------------------------------------------------------------
-
-    initial_data_load = not st.session_state[
-        "v23_initial_data_loaded"
-    ]
-
-    loading_placeholder = st.empty()
-
-    if initial_data_load:
-        loading_placeholder.markdown(
-            """
-            <div class="v23-loading-shell">
-                <div class="v23-loading-meta">
-                    Preparing your running intelligence
-                </div>
-
-                <div class="v23-skeleton-kpis">
-                    <div class="v23-skeleton-card"></div>
-                    <div class="v23-skeleton-card"></div>
-                    <div class="v23-skeleton-card"></div>
-                    <div class="v23-skeleton-card"></div>
-                </div>
-
-                <div class="v23-skeleton-charts">
-                    <div class="v23-skeleton-chart"></div>
-                    <div class="v23-skeleton-chart"></div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    (
-        kpi_df,
-        monthly_df,
-        weekday_df,
-        category_df,
-        longest_df,
-    ) = load_dashboard_data(
-        selected_year_month,
-        st.session_state["distance_category_filter"],
-    )
-
-    if initial_data_load:
-        loading_placeholder.empty()
-
-        st.session_state[
-            "v23_initial_data_loaded"
-        ] = True
-
-        st.toast(
-            "Dashboard ready · running data loaded",
-            duration=2,
-        )
-
-    if kpi_df.empty:
-        active_empty_category = st.session_state[
-            "distance_category_filter"
-        ]
-
-        st.markdown(
-            """
-            <div class="v23-empty-state">
-                <div class="v23-empty-icon">↗</div>
-
-                <div class="v23-empty-eyebrow">
-                    NO MATCHING RUNS
-                </div>
-
-                <h3>
-                    This analysis view has no activities
-                </h3>
-
-                <p>
-                    Try another month or clear the active
-                    distance-category filter to continue exploring.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        if active_empty_category is not None:
-            if st.button(
-                "Clear category filter",
-                key="empty_state_clear_category",
-                type="primary",
-            ):
-                st.session_state[
-                    "distance_category_filter"
-                ] = None
-
-                st.session_state[
-                    "distance_category_chart_version"
-                ] += 1
-
-                queue_toast(
-                    "Category filter cleared"
-                )
-
-                st.rerun(scope="fragment")
-
-        st.stop()
-
-    if monthly_df.empty:
-        st.error("Monthly running data could not be loaded.")
-        st.stop()
-
-    if weekday_df.empty:
-        st.error("Weekday running data could not be loaded.")
-        st.stop()
-
-    if category_df.empty:
-        st.error("Distance category data could not be loaded.")
-        st.stop()
-
-    if longest_df.empty:
-        st.error("Longest-run data could not be loaded.")
-        st.stop()
-
-    kpi = kpi_df.iloc[0]
-
-
-    # ------------------------------------------------------------
-    # Active analysis context
-    # ------------------------------------------------------------
-
-    start_date = pd.to_datetime(
-        kpi["start_date"]
-    ).strftime("%d %b %Y")
-
-    end_date = pd.to_datetime(
-        kpi["end_date"]
-    ).strftime("%d %b %Y")
-
-    view_label = format_month_option(
-        selected_month
-    )
-
-    st.markdown(
-        (
-            '<div class="analysis-context">'
-            f'<span class="context-pill context-pill-accent">'
-            f'VIEW · {view_label.upper()}'
-            '</span>'
-            f'<span class="context-pill">'
-            f'PERIOD · {start_date.upper()} — {end_date.upper()}'
-            '</span>'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
-
-    if selected_year_month is not None:
-        st.markdown(
-            """
-            <div class="dashboard-note">
-                <span class="dashboard-note-icon">ℹ️</span>
-                <span>
-                    KPI cards, running patterns, and ranked runs reflect
-                    the selected month. Monthly trend charts remain on
-                    the full analysis period to preserve temporal context.
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-
-    # ------------------------------------------------------------
-    # KPI cards
-    # ------------------------------------------------------------
-
-    # V2.2 active cross-filter context
-    active_distance_category = st.session_state[
-        "distance_category_filter"
-    ]
-
-    if active_distance_category is not None:
-        st.markdown(
-            f"""
-            <div class="cross-filter-status">
-                <span class="cross-filter-status-label">
-                    ACTIVE CATEGORY
-                </span>
-                <span class="cross-filter-status-value">
-                    {active_distance_category.upper()}
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(
-        4,
-        gap="medium",
-    )
-
-    with kpi_col1:
-        render_kpi_card(
-            label="Total Distance",
-            value=f"{float(kpi['total_distance_km']):,.2f} km",
-            meta="Across the selected analysis period",
-            accent_class="kpi-distance",
-        )
-
-    with kpi_col2:
-        render_kpi_card(
-            label="Runs",
-            value=f"{int(kpi['total_runs']):,}",
-            meta="Recorded running activities",
-            accent_class="kpi-runs",
-        )
-
-    with kpi_col3:
-        render_kpi_card(
-            label="Weighted Pace",
-            value=format_pace(
-                float(kpi["weighted_pace_min_km"])
-            ),
-            meta="Total moving time ÷ total distance",
-            accent_class="kpi-pace",
-        )
-
-    with kpi_col4:
-        render_kpi_card(
-            label="Longest Run",
-            value=f"{float(kpi['longest_run_km']):.2f} km",
-            meta="Maximum activity distance",
-            accent_class="kpi-longest",
-        )
-
-
-    st.markdown(
-        '<div class="section-divider"></div>',
-        unsafe_allow_html=True,
-    )
-
 
     # ------------------------------------------------------------
     # Monthly running analysis
@@ -1024,6 +765,284 @@ def render_interactive_dashboard() -> None:
         unsafe_allow_html=True,
     )
 
+
+@st.fragment
+def render_interactive_dashboard() -> None:
+    """
+    Render interactive dashboard content independently.
+
+    Month, target, and category interactions rerun this
+    fragment instead of the complete Streamlit application.
+    """
+
+    with filter_placeholder.container():
+        st.markdown(
+            '<div class="app-eyebrow">Analysis Control</div>',
+            unsafe_allow_html=True,
+        )
+
+        selected_month = st.selectbox(
+            "Analysis Month",
+            options=month_options,
+            index=0,
+            format_func=format_month_option,
+            key="analysis_month",
+            on_change=handle_month_change,
+        )
+
+    # Callbacks may queue feedback before a fragment rerun.
+    show_pending_toast()
+
+    selected_year_month = (
+        None
+        if selected_month == "All Months"
+        else selected_month
+    )
+
+
+    # ------------------------------------------------------------
+    # Load dashboard data
+    # ------------------------------------------------------------
+
+    initial_data_load = not st.session_state[
+        "v23_initial_data_loaded"
+    ]
+
+    loading_placeholder = st.empty()
+
+    if initial_data_load:
+        loading_placeholder.markdown(
+            """
+            <div class="v23-loading-shell">
+                <div class="v23-loading-meta">
+                    Preparing your running intelligence
+                </div>
+
+                <div class="v23-skeleton-kpis">
+                    <div class="v23-skeleton-card"></div>
+                    <div class="v23-skeleton-card"></div>
+                    <div class="v23-skeleton-card"></div>
+                    <div class="v23-skeleton-card"></div>
+                </div>
+
+                <div class="v23-skeleton-charts">
+                    <div class="v23-skeleton-chart"></div>
+                    <div class="v23-skeleton-chart"></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    (
+        kpi_df,
+        monthly_df,
+        weekday_df,
+        category_df,
+        longest_df,
+    ) = load_dashboard_data(
+        selected_year_month,
+        st.session_state["distance_category_filter"],
+    )
+
+    if initial_data_load:
+        loading_placeholder.empty()
+
+        st.session_state[
+            "v23_initial_data_loaded"
+        ] = True
+
+        st.toast(
+            "Dashboard ready · running data loaded",
+            duration=2,
+        )
+
+    if kpi_df.empty:
+        active_empty_category = st.session_state[
+            "distance_category_filter"
+        ]
+
+        st.markdown(
+            """
+            <div class="v23-empty-state">
+                <div class="v23-empty-icon">↗</div>
+
+                <div class="v23-empty-eyebrow">
+                    NO MATCHING RUNS
+                </div>
+
+                <h3>
+                    This analysis view has no activities
+                </h3>
+
+                <p>
+                    Try another month or clear the active
+                    distance-category filter to continue exploring.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if active_empty_category is not None:
+            if st.button(
+                "Clear category filter",
+                key="empty_state_clear_category",
+                type="primary",
+            ):
+                st.session_state[
+                    "distance_category_filter"
+                ] = None
+
+                st.session_state[
+                    "distance_category_chart_version"
+                ] += 1
+
+                queue_toast(
+                    "Category filter cleared"
+                )
+
+                st.rerun(scope="fragment")
+
+        st.stop()
+
+    if monthly_df.empty:
+        st.error("Monthly running data could not be loaded.")
+        st.stop()
+
+    if weekday_df.empty:
+        st.error("Weekday running data could not be loaded.")
+        st.stop()
+
+    if category_df.empty:
+        st.error("Distance category data could not be loaded.")
+        st.stop()
+
+    if longest_df.empty:
+        st.error("Longest-run data could not be loaded.")
+        st.stop()
+
+    kpi = kpi_df.iloc[0]
+
+
+    # ------------------------------------------------------------
+    # Active analysis context
+    # ------------------------------------------------------------
+
+    start_date = pd.to_datetime(
+        kpi["start_date"]
+    ).strftime("%d %b %Y")
+
+    end_date = pd.to_datetime(
+        kpi["end_date"]
+    ).strftime("%d %b %Y")
+
+    view_label = format_month_option(
+        selected_month
+    )
+
+    st.markdown(
+        (
+            '<div class="analysis-context">'
+            f'<span class="context-pill context-pill-accent">'
+            f'VIEW · {view_label.upper()}'
+            '</span>'
+            f'<span class="context-pill">'
+            f'PERIOD · {start_date.upper()} — {end_date.upper()}'
+            '</span>'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
+
+    if selected_year_month is not None:
+        st.markdown(
+            """
+            <div class="dashboard-note">
+                <span class="dashboard-note-icon">ℹ️</span>
+                <span>
+                    KPI cards, running patterns, and ranked runs reflect
+                    the selected month. Monthly trend charts remain on
+                    the full analysis period to preserve temporal context.
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+    # ------------------------------------------------------------
+    # KPI cards
+    # ------------------------------------------------------------
+
+    # V2.2 active cross-filter context
+    active_distance_category = st.session_state[
+        "distance_category_filter"
+    ]
+
+    if active_distance_category is not None:
+        st.markdown(
+            f"""
+            <div class="cross-filter-status">
+                <span class="cross-filter-status-label">
+                    ACTIVE CATEGORY
+                </span>
+                <span class="cross-filter-status-value">
+                    {active_distance_category.upper()}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(
+        4,
+        gap="medium",
+    )
+
+    with kpi_col1:
+        render_kpi_card(
+            label="Total Distance",
+            value=f"{float(kpi['total_distance_km']):,.2f} km",
+            meta="Across the selected analysis period",
+            accent_class="kpi-distance",
+        )
+
+    with kpi_col2:
+        render_kpi_card(
+            label="Runs",
+            value=f"{int(kpi['total_runs']):,}",
+            meta="Recorded running activities",
+            accent_class="kpi-runs",
+        )
+
+    with kpi_col3:
+        render_kpi_card(
+            label="Weighted Pace",
+            value=format_pace(
+                float(kpi["weighted_pace_min_km"])
+            ),
+            meta="Total moving time ÷ total distance",
+            accent_class="kpi-pace",
+        )
+
+    with kpi_col4:
+        render_kpi_card(
+            label="Longest Run",
+            value=f"{float(kpi['longest_run_km']):.2f} km",
+            meta="Maximum activity distance",
+            accent_class="kpi-longest",
+        )
+
+
+    st.markdown(
+        '<div class="section-divider"></div>',
+        unsafe_allow_html=True,
+    )
+
+
+    # Monthly trends run as an independent nested fragment.
+    render_monthly_trends(monthly_df)
 
     # ------------------------------------------------------------
     # Running pattern analysis

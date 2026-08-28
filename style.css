@@ -2078,3 +2078,118 @@ div[data-testid="stToast"] {
             none !important;
     }
 }
+
+/* V2.3 — Final responsive and accessibility polish */
+
+html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+::selection {
+    background: rgba(252, 76, 2, 0.30);
+    color: #FFFFFF;
+}
+
+
+/* Better touch / pointer feedback */
+
+button,
+[role="button"] {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+input:focus-visible,
+[role="button"]:focus-visible {
+    outline: 2px solid rgba(34, 211, 238, 0.72);
+    outline-offset: 3px;
+}
+
+
+/* Plotly interaction feels intentional */
+
+div[data-testid="stPlotlyChart"] {
+    contain: layout paint;
+}
+
+.js-plotly-plot .plotly .cursor-pointer {
+    cursor: pointer !important;
+}
+
+
+/* Prevent awkward horizontal propagation */
+
+div[data-testid="stDataFrame"] {
+    overscroll-behavior: contain;
+}
+
+
+/* Improve numeric stability */
+
+.kpi-value,
+input,
+[data-testid="stDataFrame"] {
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* Mobile interaction targets */
+
+@media (max-width: 640px) {
+    div[data-testid="stButton"] > button {
+        min-height: 44px;
+    }
+
+    .analysis-context {
+        gap: 0.45rem;
+    }
+
+    .context-pill {
+        line-height: 1.35;
+    }
+
+    .section-heading {
+        text-wrap: balance;
+    }
+
+    .section-description {
+        max-width: 100%;
+    }
+}
+
+
+/* Avoid hover transforms on touch hardware */
+
+@media (hover: none) {
+    .kpi-card:hover,
+    div[data-testid="stPlotlyChart"]:hover,
+    div[data-testid="stButton"] > button:hover,
+    .cross-filter-status:hover {
+        transform: none !important;
+    }
+}
+
+
+/* Accessibility: user preference wins */
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
