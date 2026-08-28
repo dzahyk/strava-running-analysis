@@ -239,7 +239,6 @@ def load_available_month_options() -> list[str]:
         connection.close()
 
 
-@st.cache_data
 def load_dashboard_data(
     year_month: str | None,
     distance_category: str | None = None,
@@ -254,11 +253,6 @@ def load_dashboard_data(
     The category distribution itself remains month-filtered only
     so all categories stay available for interactive selection.
     """
-    if distance_category is None:
-        distance_category = st.session_state.get(
-            "distance_category_filter"
-        )
-
     connection = initialize_database()
 
     try:
@@ -372,7 +366,8 @@ selected_year_month = (
     category_df,
     longest_df,
 ) = load_dashboard_data(
-    selected_year_month
+    selected_year_month,
+    st.session_state["distance_category_filter"],
 )
 
 if kpi_df.empty:
