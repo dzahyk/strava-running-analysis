@@ -1055,3 +1055,560 @@ select:focus-visible,
         transform: none !important;
     }
 }
+
+/* V2.3 — Chart surfaces and micro-interactions */
+
+
+/* ============================================================
+   Chart surfaces
+   Cyan = exploration / inspection
+   ============================================================ */
+
+div[data-testid="stPlotlyChart"] {
+    position: relative;
+
+    overflow: hidden;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.065);
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.030),
+            rgba(255, 255, 255, 0.008)
+        ),
+        rgba(15, 23, 42, 0.46);
+
+    backdrop-filter:
+        blur(16px)
+        saturate(125%);
+
+    -webkit-backdrop-filter:
+        blur(16px)
+        saturate(125%);
+
+    box-shadow:
+        inset 0 1px 0
+            rgba(255, 255, 255, 0.035),
+        0 14px 36px
+            rgba(0, 0, 0, 0.18);
+
+    padding:
+        0.22rem
+        0.24rem
+        0.10rem;
+
+    transition:
+        transform
+            220ms
+            var(--v23-ease),
+        border-color
+            220ms ease,
+        box-shadow
+            220ms ease,
+        background
+            220ms ease;
+}
+
+
+/*
+   Use cyan for hover/exploration.
+   Orange remains reserved for active/selected state.
+*/
+@media (hover: hover) and (pointer: fine) {
+    div[data-testid="stPlotlyChart"]:hover {
+        transform:
+            translateY(-2px);
+
+        border-color:
+            rgba(34, 211, 238, 0.14);
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.036),
+                rgba(255, 255, 255, 0.010)
+            ),
+            rgba(15, 23, 42, 0.54);
+
+        box-shadow:
+            inset 0 1px 0
+                rgba(255, 255, 255, 0.045),
+            0 19px 48px
+                rgba(0, 0, 0, 0.25),
+            0 0 26px
+                rgba(34, 211, 238, 0.035);
+    }
+}
+
+
+/* Plotly mode bar */
+
+div[data-testid="stPlotlyChart"]
+.modebar {
+    opacity: 0.36;
+
+    transition:
+        opacity 160ms ease;
+}
+
+div[data-testid="stPlotlyChart"]:hover
+.modebar {
+    opacity: 0.88;
+}
+
+div[data-testid="stPlotlyChart"]
+.modebar-btn {
+    border-radius: 8px;
+
+    transition:
+        background 150ms ease,
+        opacity 150ms ease,
+        transform 150ms ease;
+}
+
+div[data-testid="stPlotlyChart"]
+.modebar-btn:hover {
+    background:
+        rgba(34, 211, 238, 0.08);
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* ============================================================
+   Premium button interaction
+   ============================================================ */
+
+div[data-testid="stButton"] > button {
+    min-height: 2.55rem;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.085);
+
+    border-radius: 11px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.045),
+            rgba(255, 255, 255, 0.015)
+        ),
+        rgba(17, 24, 39, 0.80);
+
+    color:
+        #F8FAFC;
+
+    font-weight: 650;
+
+    letter-spacing:
+        -0.01em;
+
+    box-shadow:
+        inset 0 1px 0
+            rgba(255, 255, 255, 0.035);
+
+    transition:
+        transform
+            160ms
+            var(--v23-ease),
+        border-color
+            160ms ease,
+        background
+            160ms ease,
+        box-shadow
+            160ms ease;
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+    div[data-testid="stButton"] > button:hover {
+        transform:
+            translateY(-2px);
+
+        border-color:
+            rgba(34, 211, 238, 0.22);
+
+        background:
+            linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.055),
+                rgba(255, 255, 255, 0.018)
+            ),
+            rgba(17, 24, 39, 0.92);
+
+        box-shadow:
+            0 10px 26px
+                rgba(0, 0, 0, 0.20),
+            0 0 20px
+                rgba(34, 211, 238, 0.025);
+    }
+}
+
+
+div[data-testid="stButton"] > button:active {
+    transform:
+        translateY(0)
+        scale(0.985);
+
+    transition-duration:
+        90ms;
+}
+
+
+/*
+   Primary action stays orange.
+*/
+div[data-testid="stButton"]
+button[kind="primary"] {
+    border-color:
+        rgba(252, 76, 2, 0.72);
+
+    background:
+        linear-gradient(
+            180deg,
+            #FC5A16,
+            #FC4C02
+        );
+
+    color:
+        #FFFFFF;
+
+    box-shadow:
+        0 10px 26px
+            rgba(252, 76, 2, 0.15);
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+    div[data-testid="stButton"]
+    button[kind="primary"]:hover {
+        border-color:
+            rgba(255, 123, 66, 0.85);
+
+        background:
+            linear-gradient(
+                180deg,
+                #FF6A2A,
+                #FC4C02
+            );
+
+        box-shadow:
+            0 12px 30px
+                rgba(252, 76, 2, 0.22);
+    }
+}
+
+
+/* ============================================================
+   Select / number input tactile polish
+   ============================================================ */
+
+div[data-testid="stSelectbox"],
+div[data-testid="stNumberInput"] {
+    transition:
+        transform
+        180ms
+        var(--v23-ease);
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+    div[data-testid="stSelectbox"]:hover,
+    div[data-testid="stNumberInput"]:hover {
+        transform:
+            translateY(-1px);
+    }
+}
+
+
+div[data-testid="stNumberInput"] input {
+    font-variant-numeric:
+        tabular-nums;
+
+    letter-spacing:
+        -0.015em;
+}
+
+
+/* ============================================================
+   Dataframe / ranking surface
+   ============================================================ */
+
+div[data-testid="stDataFrame"] {
+    overflow: hidden;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.065);
+
+    border-radius:
+        16px;
+
+    background:
+        rgba(15, 23, 42, 0.52);
+
+    box-shadow:
+        inset 0 1px 0
+            rgba(255, 255, 255, 0.025),
+        0 12px 34px
+            rgba(0, 0, 0, 0.15);
+}
+
+
+/* ============================================================
+   Active filter feedback
+   ============================================================ */
+
+.cross-filter-status {
+    position: relative;
+
+    overflow: hidden;
+
+    border-color:
+        rgba(252, 76, 2, 0.34);
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(252, 76, 2, 0.11),
+            rgba(252, 76, 2, 0.055)
+        );
+
+    box-shadow:
+        inset 0 1px 0
+            rgba(255, 255, 255, 0.035),
+        0 7px 22px
+            rgba(252, 76, 2, 0.045);
+
+    transition:
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        transform
+            180ms
+            var(--v23-ease);
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+    .cross-filter-status:hover {
+        transform:
+            translateY(-1px);
+
+        border-color:
+            rgba(252, 76, 2, 0.48);
+
+        box-shadow:
+            inset 0 1px 0
+                rgba(255, 255, 255, 0.045),
+            0 9px 26px
+                rgba(252, 76, 2, 0.08);
+    }
+}
+
+
+.cross-filter-status::before {
+    box-shadow:
+        0 0 11px
+        rgba(252, 76, 2, 0.48);
+}
+
+
+/* ============================================================
+   Section headings
+   ============================================================ */
+
+.chart-control-label,
+.section-label,
+.table-title {
+    letter-spacing:
+        -0.012em;
+}
+
+
+.chart-control-help,
+.section-subtitle,
+.table-subtitle {
+    color:
+        #94A3B8;
+
+    line-height:
+        1.55;
+}
+
+
+/* ============================================================
+   Initial visual entrance
+   This will become even smoother once fragments are introduced.
+   ============================================================ */
+
+@keyframes v23-enter-soft {
+    from {
+        opacity: 0;
+        transform:
+            translateY(8px)
+            scale(0.997);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+@keyframes v23-enter-hero {
+    from {
+        opacity: 0;
+        transform:
+            translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0);
+    }
+}
+
+
+.app-eyebrow {
+    animation:
+        v23-enter-hero
+        400ms
+        var(--v23-ease)
+        both;
+}
+
+
+.app-title {
+    animation:
+        v23-enter-hero
+        480ms
+        45ms
+        var(--v23-ease)
+        both;
+}
+
+
+.app-subtitle {
+    animation:
+        v23-enter-hero
+        520ms
+        85ms
+        var(--v23-ease)
+        both;
+}
+
+
+.kpi-card {
+    animation:
+        v23-enter-soft
+        420ms
+        90ms
+        var(--v23-ease)
+        both;
+}
+
+
+div[data-testid="stPlotlyChart"] {
+    animation:
+        v23-enter-soft
+        460ms
+        120ms
+        var(--v23-ease)
+        both;
+}
+
+
+div[data-testid="stDataFrame"] {
+    animation:
+        v23-enter-soft
+        460ms
+        140ms
+        var(--v23-ease)
+        both;
+}
+
+
+/* ============================================================
+   Mobile / tablet behavior
+   ============================================================ */
+
+@media (max-width: 900px) {
+    div[data-testid="stPlotlyChart"] {
+        border-radius:
+            16px;
+
+        padding:
+            0.12rem;
+    }
+}
+
+
+@media (max-width: 640px) {
+    div[data-testid="stPlotlyChart"] {
+        border-radius:
+            14px;
+
+        box-shadow:
+            0 10px 28px
+            rgba(0, 0, 0, 0.18);
+    }
+
+    div[data-testid="stButton"] > button {
+        min-height:
+            2.7rem;
+
+        border-radius:
+            10px;
+    }
+
+    div[data-testid="stDataFrame"] {
+        border-radius:
+            14px;
+    }
+}
+
+
+/* ============================================================
+   Reduced motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .app-eyebrow,
+    .app-title,
+    .app-subtitle,
+    .kpi-card,
+    div[data-testid="stPlotlyChart"],
+    div[data-testid="stDataFrame"] {
+        animation:
+            none !important;
+    }
+
+    div[data-testid="stPlotlyChart"],
+    div[data-testid="stButton"] > button,
+    div[data-testid="stSelectbox"],
+    div[data-testid="stNumberInput"],
+    .cross-filter-status {
+        transition:
+            none !important;
+    }
+
+    div[data-testid="stPlotlyChart"]:hover,
+    div[data-testid="stButton"] > button:hover,
+    div[data-testid="stSelectbox"]:hover,
+    div[data-testid="stNumberInput"]:hover,
+    .cross-filter-status:hover {
+        transform:
+            none !important;
+    }
+}
