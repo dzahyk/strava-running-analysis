@@ -4,6 +4,12 @@ A progressive data analytics portfolio project built from a sanitized personal S
 
 The project evolves from exploratory analysis in Python and Pandas into a reproducible SQL analytics layer and an interactive Streamlit dashboard powered by DuckDB and Plotly.
 
+## Dashboard Preview
+
+![V2 Strava Running Analysis dashboard](images/dashboard/01_v2_dashboard_all_months.png)
+
+The dashboard combines reconciled running KPIs, SQL-based analytical summaries, interactive month filtering, and ranked running performances.
+
 ## Current Release
 
 **V2 — DuckDB SQL + Interactive Streamlit Dashboard**
@@ -226,6 +232,10 @@ The KPI cards display:
 ### Month Filtering
 
 The dashboard supports an `All Months` view and individual analysis months from Nov 2025 through Jul 2026.
+
+Example filtered view:
+
+![V2 dashboard filtered to January 2026](images/dashboard/02_v2_dashboard_january_2026.png)
 
 When one month is selected, DuckDB recalculates:
 
